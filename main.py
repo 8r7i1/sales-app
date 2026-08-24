@@ -1,6 +1,9 @@
 import streamlit as st
 import mysql.connector
 
+# إعدادات صفحة Streamlit لتصميم أنيق وواضح
+st.set_page_config(page_title="نظام المبيعات - حسن", page_icon="📊", layout="centered")
+
 
 # إعدادات الاتصال بقاعدة البيانات باستخدام Streamlit Secrets
 def get_db_connection():
@@ -37,46 +40,55 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = ""
 
-# واجهة تسجيل الدخول إذا لم يتم تسجيل الدخول بعد
+# واجهة تسجيل الدخول بتصميم مخصص وواضح
 if not st.session_state.logged_in:
-    st.subheader("تسجيل الدخول - نظام المبيعات")
+    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>تسجيل الدخول - نظام المبيعات</h2>",
+                unsafe_allow_html=True)
 
-    with st.form("login_form"):
-        username_input = st.text_input("اسم المستخدم:")
-        password_input = st.text_input("كلمة المرور:", type="password")
-        submit_login = st.form_submit_button("دخول")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        with st.form("login_form"):
+            username_input = st.text_input("اسم المستخدم:")
+            password_input = st.text_input("كلمة المرور:", type="password")
+            submit_login = st.form_submit_button("دخول النظام", use_container_width=True)
 
-        if submit_login:
-            if authenticate_user(username_input.strip(), password_input.strip()):
-                st.session_state.logged_in = True
-                st.session_state.username = username_input.strip()
-                st.success("تم تسجيل الدخول بنجاح!")
-                st.rerun()
-            else:
-                st.error("اسم المستخدم أو كلمة المرور غير صحيحة!")
+            if submit_login:
+                if authenticate_user(username_input.strip(), password_input.strip()):
+                    st.session_state.logged_in = True
+                    st.session_state.username = username_input.strip()
+                    st.success("تم تسجيل الدخول بنجاح!")
+                    st.rerun()
+                else:
+                    st.error("اسم المستخدم أو كلمة المرور غير صحيحة!")
+
+    # توقيع المطور في شاشة الدخول
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray; font-size: 14px;'>Developed by <b>HASSAN ELNOUSH</b></p>",
+                unsafe_allow_html=True)
 
 else:
-    # الواجهة الرئيسية بعد تسجيل الدخول الناجح
-    st.sidebar.write(f"مرحباً، {st.session_state.username}")
-    if st.sidebar.button("تسجيل الخروج"):
+    # الشريط الجانبي وتوقيع المطور
+    st.sidebar.markdown(f"### مرحباً، {st.session_state.username}")
+    if st.sidebar.button("تسجيل الخروج", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.rerun()
 
-    st.title("لوحة تحكم نظام المبيعات")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(
+        "<p style='text-align: center; color: gray; font-size: 12px;'>Developer: <b>HASSAN ELNOUSH</b></p>",
+        unsafe_allow_html=True)
 
-    # نموذج تسجيل عملية مبيعات جديدة
-    with st.form("sales_form"):
-        # تم تعديل حقل المبلغ ليقبل أرقام صحيحة فقط بدون أعشار (step=1)
-        amount = st.number_input("مبلغ العملية:", min_value=0, step=1, format="%d")
+    st.title("📊 لوحة تحكم نظام المبيعات")
 
-        # خيارات طرق الدفع
+    # نموذج تسجيل عملية مبيعات جديدة (أرقام صحيحة بدون أعشار)
+    with st.form("sales_form", clear_on_submit=True):
+        st.subheader("إضافة عملية بيع جديدة")
+        amount = st.number_input("مبلغ العملية (أرقام صحيحة فقط):", min_value=0, step=1, format="%d")
         payment_type = st.selectbox("طريقة الدفع:", ["نقداً", "بنكك"])
-
-        # حقل إدخال رقم العملية المرجعي لبنكك
         transaction_ref = st.text_input("رقم العملية المرجعي (مطلوب لبنكك فقط):")
 
-        submit_sale = st.form_submit_button("حفظ العملية")
+        submit_sale = st.form_submit_button("حفظ العملية", use_container_width=True)
 
     if submit_sale:
         if amount <= 0:
@@ -95,3 +107,43 @@ else:
                 conn.close()
                 st.success("تم تسجيل عملية المبيعات بنجاح!")
                 st.rerun()
+
+    # قسم عرض الإحصائيات والمجاميع (الكاش وبنكك)
+    st.markdown("---")
+    st.subheader("📈 ملخص المجاميع")
+
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        # جلب إجمالي الكاش وإجمالي بنكك
+        cursor.execute("SELECT payment_type, SUM(amount) as total FROM transactions GROUP BY payment_type")
+        totals = cursor.fetchall()
+
+        cash_total = 0
+        bank_total = 0
+        for row in totals:
+            if row['payment_type'] == 'نقداً':
+                cash_total = row['total'] or 0
+            elif row['payment_type'] == 'بنكك':
+                bank_total = row['total'] or 0
+
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.metric(label="💵 إجمالي الكاش (نقداً)", value=f"{cash_total:,} جنيه")
+        with col_b:
+            st.metric(label="🏦 إجمالي بنكك", value=f"{bank_total:,} جنيه")
+
+        # قسم أرشيف الأيام وعرض العمليات السابقة
+        st.markdown("---")
+        st.subheader("📅 أرشيف العمليات السابقة")
+        cursor.execute(
+            "SELECT id, amount, payment_type, transaction_ref, status, created_at FROM transactions ORDER BY created_at DESC")
+        transactions_data = cursor.fetchall()
+
+        if transactions_data:
+            st.dataframe(transactions_data, use_container_width=True)
+        else:
+            st.info("لا توجد عمليات مسجلة حتى الآن.")
+
+        cursor.close()
+        conn.close()
