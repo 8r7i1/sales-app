@@ -1,5 +1,6 @@
 import streamlit as st
 import mysql.connector
+from datetime import datetime
 
 # إعدادات صفحة Streamlit لتصميم أنيق وواضح
 st.set_page_config(page_title="نظام المبيعات - حسن", page_icon="📊", layout="centered")
@@ -66,11 +67,10 @@ if not st.session_state.logged_in:
                 unsafe_allow_html=True)
 
 else:
-    # ----------------- الشريط الجانبي (Sidebar) لإدارة النظام والأرشيف -----------------
+    # ----------------- الشريط الجانبي (Sidebar) -----------------
     st.sidebar.markdown(f"### مرحباً، {st.session_state.username}")
     st.sidebar.markdown("---")
 
-    # قائمة التنقل الجانبية
     nav_option = st.sidebar.radio("القائمة الرئيسية", ["تسجيل مبيعات", "أرشيف العمليات", "إقفال اليومية"])
 
     st.sidebar.markdown("---")
@@ -83,11 +83,10 @@ else:
         "<p style='text-align: center; color: gray; font-size: 12px;'>Developer: <b>HASSAN ELNOUSH</b></p>",
         unsafe_allow_html=True)
 
-    # ----------------- 1. شاشة تسجيل مبيعات (الواجهة الافتراضية) -----------------
+    # ----------------- 1. شاشة تسجيل مبيعات -----------------
     if nav_option == "تسجيل مبيعات":
         st.title("📊 لوحة تحكم نظام المبيعات")
 
-        # نموذج تسجيل عملية مبيعات جديدة (أرقام صحيحة بدون أعشار)
         with st.form("sales_form", clear_on_submit=True):
             st.subheader("إضافة عملية بيع جديدة")
             amount = st.number_input("مبلغ العملية (أرقام صحيحة فقط):", min_value=0, step=1, format="%d")
@@ -114,9 +113,8 @@ else:
                     st.success("تم تسجيل عملية المبيعات بنجاح!")
                     st.rerun()
 
-        # قسم عرض إجمالي المجاميع السريعة في الواجهة الرئيسية
         st.markdown("---")
-        st.subheader("📈 ملخص المجاميع العامة")
+        st.subheader("📈 ملخص المجاميع المفتوحة (اليومية الحالية)")
 
         conn = get_db_connection()
         if conn:
@@ -142,22 +140,23 @@ else:
             cursor.close()
             conn.close()
 
-    # ----------------- 2. شاشة أرشيف العمليات (مخفية في القائمة الجانبية) -----------------
+    # ----------------- 2. شاشة أرشيف العمليات المقفلة -----------------
     elif nav_option == "أرشيف العمليات":
-        st.title("📅 أرشيف العمليات السابقة")
-        st.info("هنا يمكنك الاطلاع على كافة سجلات العمليات السابقة بشكل خاص.")
+        st.title("📅 أرشيف الإقفالات والعمليات السابقة")
+        st.info("هنا يتم عرض العمليات التي تم إقفالها مقسمة ومنظمة حسب مجموعات الإقفال.")
 
         conn = get_db_connection()
         if conn:
             cursor = conn.cursor(dictionary=True)
+            # جلب العمليات المقفلة فقط مرتبطة بـ closing_batch
             cursor.execute(
-                "SELECT id, amount, payment_type, transaction_ref, status, created_at FROM transactions ORDER BY created_at DESC")
-            transactions_data = cursor.fetchall()
+                "SELECT id, amount, payment_type, transaction_ref, closing_batch, created_at FROM transactions WHERE status = 'closed' ORDER BY created_at DESC")
+            archive_data = cursor.fetchall()
 
-            if transactions_data:
-                st.dataframe(transactions_data, use_container_width=True)
+            if archive_data:
+                st.dataframe(archive_data, use_container_width=True)
             else:
-                st.info("لا توجد عمليات مسجلة حتى الآن.")
+                st.info("لا توجد عمليات مقفلة في الأرشيف حتى الآن.")
 
             cursor.close()
             conn.close()
@@ -165,16 +164,21 @@ else:
     # ----------------- 3. شاشة إقفال اليومية -----------------
     elif nav_option == "إقفال اليومية":
         st.title("🔒 إقفال اليومية")
-        st.warning("عملية إقفال اليومية تقوم بتسوية العمليات الحالية وتصفير الحسابات المفتوحة لبدء يومية جديدة.")
+        st.warning(
+            "عند الضغط على إقفال اليومية، سيتم نقل كافة العمليات المفتوحة الحالية إلى الأرشيف وإعطاؤها رقم إقفال خاص لتصفير الحسابات وبدء يومية جديدة.")
 
-        if st.button("تأكيد إقفال اليومية الحالية", type="primary"):
+        if st.button("تأكيد إقفال اليومية الحالية", type="primary", use_container_width=True):
             conn = get_db_connection()
             if conn:
                 cursor = conn.cursor()
-                # تحديث حالة العمليات من open إلى closed
-                cursor.execute("UPDATE transactions SET status = 'closed' WHERE status = 'open'")
+                # توليد معرف إقفال فريد يعتمد على التاريخ والوقت الحالي بالثانية لضمان عدم تكراره حتى لو تم الإقفال عدة مرات في نفس اليوم
+                batch_id = f"BATCH-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+
+                # تحديث العمليات المفتوحة إلى مقفلة وربطها برقم الإقفال
+                query = "UPDATE transactions SET status = 'closed', closing_batch = %s WHERE status = 'open'"
+                cursor.execute(query, (batch_id,))
                 conn.commit()
                 cursor.close()
                 conn.close()
-                st.success("تم إقفال اليومية بنجاح وتصفير العمليات المفتوحة!")
+                st.success(f"تم إقفال اليومية بنجاح برقم إقفال: {batch_id}")
                 st.rerun()
