@@ -825,4 +825,25 @@ else:
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ خطأ: {e}")
-                    
+
+
+                    # إضافة زر للنسخ الاحتياطي في الشريط الجانبي
+                    def backup_database():
+                        """إنشاء نسخة احتياطية من قاعدة البيانات"""
+                        conn = get_db_connection()
+                        if conn:
+                            cursor = conn.cursor()
+                            # تصدير جميع الجداول إلى ملف SQL
+                            cursor.execute("SHOW TABLES")
+                            tables = cursor.fetchall()
+
+                            backup_data = {}
+                            for table in tables:
+                                cursor.execute(f"SELECT * FROM {table[0]}")
+                                backup_data[table[0]] = cursor.fetchall()
+
+                            # حفظ في ملف
+                            with open(f"backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json", 'w') as f:
+                                json.dump(backup_data, f)
+
+                            st.success("✅ تم إنشاء النسخة الاحتياطية!")
