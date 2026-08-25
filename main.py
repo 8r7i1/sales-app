@@ -22,17 +22,12 @@ st.set_page_config(
 # CSS المخصص للواجهة
 # ============================================
 def apply_custom_css():
-    """تطبيق التنسيقات المخصصة للواجهة"""
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap');
-    * {
-        font-family: 'Tajawal', sans-serif;
-    }
+    * { font-family: 'Tajawal', sans-serif; }
 
-    .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    }
+    .stApp { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
 
     .metric-card {
         background: white;
@@ -41,26 +36,14 @@ def apply_custom_css():
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         text-align: center;
         transition: transform 0.3s, box-shadow 0.3s;
-        border: 1px solid rgba(255,255,255,0.2);
-        backdrop-filter: blur(10px);
     }
     .metric-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 25px rgba(0,0,0,0.15);
     }
-    .metric-icon {
-        font-size: 30px;
-        margin-bottom: 10px;
-    }
-    .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: #1E3A8A;
-    }
-    .metric-label {
-        color: #666;
-        font-size: 14px;
-    }
+    .metric-icon { font-size: 30px; margin-bottom: 10px; }
+    .metric-value { font-size: 28px; font-weight: bold; color: #1E3A8A; }
+    .metric-label { color: #666; font-size: 14px; }
 
     .stButton button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -77,12 +60,8 @@ def apply_custom_css():
         box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
     }
 
-    .css-1d391kg {
-        background: linear-gradient(180deg, #1E3A8A 0%, #1a1a2e 100%);
-    }
-    .css-1d391kg .stMarkdown {
-        color: white;
-    }
+    .css-1d391kg { background: linear-gradient(180deg, #1E3A8A 0%, #1a1a2e 100%); }
+    .css-1d391kg .stMarkdown { color: white; }
 
     .form-card {
         background: white;
@@ -101,25 +80,11 @@ def apply_custom_css():
         color: white;
         box-shadow: 0 10px 40px rgba(30, 58, 138, 0.3);
     }
-    .main-header h1 {
-        font-size: 45px;
-        font-weight: 700;
-        margin: 0;
-    }
-    .main-header p {
-        font-size: 18px;
-        opacity: 0.9;
-        margin: 10px 0 0 0;
-    }
+    .main-header h1 { font-size: 45px; font-weight: 700; margin: 0; }
+    .main-header p { font-size: 18px; opacity: 0.9; margin: 10px 0 0 0; }
 
-    .logo-container {
-        text-align: center;
-        padding: 20px 0;
-    }
-    .logo-text {
-        font-size: 60px;
-        animation: pulse 2s infinite;
-    }
+    .logo-container { text-align: center; padding: 20px 0; }
+    .logo-text { font-size: 60px; animation: pulse 2s infinite; }
     @keyframes pulse {
         0% { transform: scale(1); }
         50% { transform: scale(1.1); }
@@ -132,47 +97,8 @@ def apply_custom_css():
         border-radius: 20px;
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.2);
         max-width: 450px;
         margin: 0 auto;
-    }
-
-    .status-open {
-        color: #10B981;
-        font-weight: bold;
-    }
-    .status-closed {
-        color: #EF4444;
-        font-weight: bold;
-    }
-
-    @media only screen and (max-width: 600px) {
-        .main-header h1 {
-            font-size: 28px;
-        }
-        .metric-value {
-            font-size: 20px;
-        }
-        .stButton button {
-            width: 100% !important;
-        }
-        .row-widget {
-            flex-wrap: wrap !important;
-        }
-    }
-
-    .custom-progress {
-        background: #e0e0e0;
-        border-radius: 10px;
-        height: 10px;
-        margin: 10px 0;
-        overflow: hidden;
-    }
-    .custom-progress-bar {
-        background: linear-gradient(90deg, #667eea, #764ba2);
-        height: 100%;
-        border-radius: 10px;
-        transition: width 0.5s;
     }
 
     .revenue-card {
@@ -189,11 +115,30 @@ def apply_custom_css():
         border-radius: 10px;
         text-align: center;
     }
+
+    .custom-progress {
+        background: #e0e0e0;
+        border-radius: 10px;
+        height: 10px;
+        margin: 10px 0;
+        overflow: hidden;
+    }
+    .custom-progress-bar {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s;
+    }
+
+    @media only screen and (max-width: 600px) {
+        .main-header h1 { font-size: 28px; }
+        .metric-value { font-size: 20px; }
+        .stButton button { width: 100% !important; }
+    }
     </style>
     """, unsafe_allow_html=True)
 
 
-# تطبيق التنسيقات
 apply_custom_css()
 
 
@@ -351,7 +296,7 @@ def get_daily_totals(username):
             bank_count = 0
 
             for row in results:
-                if row['payment_type'] == 'نقداً':
+                if row['payment_type'] == 'كاش':
                     cash_total = row['total'] or 0
                     cash_count = row['count'] or 0
                 elif row['payment_type'] == 'بنكك':
@@ -650,7 +595,7 @@ with st.sidebar:
 
     nav_option = st.sidebar.radio(
         "📋 القائمة الرئيسية",
-        ["📊 لوحة التحكم", "💰 المصروفات", "📅 الأرشيف", "🔒 إقفال اليومية"]
+        ["📊 لوحة التحكم", "💰 الإيرادات", "📅 الأرشيف", "🔒 إقفال اليومية"]
     )
 
     st.sidebar.markdown("---")
@@ -757,7 +702,7 @@ if nav_option == "📊 لوحة التحكم":
     total_amount = cash_total + bank_total
     net_profit = total_amount - expenses_today
 
-    # بطاقات الإيرادات (كاش + بنكك)
+    # بطاقات الإيرادات
     st.subheader("💰 الإيرادات")
     col_rev1, col_rev2 = st.columns(2)
 
@@ -783,7 +728,7 @@ if nav_option == "📊 لوحة التحكم":
 
     st.markdown("---")
 
-    # بطاقات المعلومات الرئيسية
+    # بطاقات المعلومات
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -826,7 +771,7 @@ if nav_option == "📊 لوحة التحكم":
 
     st.markdown("---")
 
-    # شريط تقدم اليوم
+    # شريط تقدم
     target = 20
     progress = min((total_transactions / target) * 100, 100)
     st.markdown(f"""
@@ -883,68 +828,68 @@ if nav_option == "📊 لوحة التحكم":
                 st.plotly_chart(fig, use_container_width=True)
 
 # ============================================
-# 2. المصروفات
+# 2. الإيرادات (جديد)
 # ============================================
 
-elif nav_option == "💰 المصروفات":
+elif nav_option == "💰 الإيرادات":
     st.markdown(f"""
         <div style='background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;'>
             <h2 style='color: #1E3A8A; margin: 0;'>
-                💰 المصروفات {f" - {restaurant_name}" if not is_dev else ""}
+                💰 الإيرادات {f" - {restaurant_name}" if not is_dev else ""}
             </h2>
         </div>
     """, unsafe_allow_html=True)
 
+    # نموذج إضافة إيراد جديد
     with st.container():
         st.markdown('<div class="form-card">', unsafe_allow_html=True)
-        with st.expander("➕ إضافة مصروف جديد", expanded=True):
-            with st.form("expense_form", clear_on_submit=True):
+        with st.expander("➕ إضافة إيراد جديد", expanded=True):
+            with st.form("revenue_form", clear_on_submit=True):
                 col1, col2 = st.columns(2)
                 with col1:
-                    description = st.text_input("📝 وصف المصروف", placeholder="مثال: فاتورة كهرباء")
+                    payment_type = st.selectbox("💳 طريقة الدفع", ["كاش", "بنكك"])
                 with col2:
-                    amount = st.number_input("💵 المبلغ", min_value=1, step=1, format="%d")
+                    # إدخال المبلغ (يدوي أو مضاعفات 500)
+                    amount_option = st.radio(
+                        "اختر طريقة الإدخال",
+                        ["إدخال يدوي", "مضاعفات 500"]
+                    )
 
-                col3, col4 = st.columns(2)
-                with col3:
-                    category = st.selectbox("📂 الفئة", get_expense_categories())
-                with col4:
-                    expense_date = st.date_input("📅 التاريخ", value=date.today())
+                    if amount_option == "إدخال يدوي":
+                        amount = st.number_input("💵 المبلغ", min_value=1, step=1, format="%d")
+                    else:
+                        multiplier = st.number_input("عدد مضاعفات 500", min_value=1, step=1, value=1)
+                        amount = multiplier * 500
+                        st.info(f"💰 المبلغ: {amount:,} جنيه (500 × {multiplier})")
 
-                submit_expense = st.form_submit_button("💾 حفظ المصروف", use_container_width=True, type="primary")
+                transaction_ref = st.text_input("🔢 رقم العملية المرجعي", placeholder="مطلوب فقط للدفع عبر بنكك")
 
-                if submit_expense:
-                    if not description.strip():
-                        st.warning("⚠️ يرجى إدخال وصف للمصروف!")
-                    elif amount <= 0:
+                submit_revenue = st.form_submit_button("💾 حفظ الإيراد", use_container_width=True, type="primary")
+
+                if submit_revenue:
+                    if amount <= 0:
                         st.warning("⚠️ يرجى إدخال مبلغ أكبر من الصفر!")
+                    elif payment_type == "بنكك" and not transaction_ref.strip():
+                        st.warning("⚠️ يرجى إدخال رقم العملية المرجعي!")
                     else:
                         conn = get_db_connection()
                         if conn:
                             try:
                                 cursor = conn.cursor()
+                                ref_val = transaction_ref.strip() if payment_type == "بنكك" else None
                                 query = """
-                                    INSERT INTO expenses (description, amount, category, expense_date, username, restaurant_name) 
-                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                    INSERT INTO transactions (amount, payment_type, transaction_ref, status, username, restaurant_name) 
+                                    VALUES (%s, %s, %s, 'open', %s, %s)
                                 """
-                                cursor.execute(query, (description.strip(), amount, category, expense_date,
-                                                       st.session_state.username, restaurant_name))
+                                cursor.execute(query, (amount, payment_type, ref_val, st.session_state.username,
+                                                       restaurant_name))
                                 conn.commit()
-                                log_activity(st.session_state.username, "إضافة مصروف",
-                                             f"الوصف: {description}, المبلغ: {amount}, الفئة: {category}")
+                                log_activity(st.session_state.username, "إضافة إيراد",
+                                             f"المبلغ: {amount}, الطريقة: {payment_type}")
                                 cursor.close()
                                 conn.close()
-                                st.success(f"✅ تم إضافة المصروف بنجاح! ({amount:,.0f} جنيه)")
+                                st.success(f"✅ تم إضافة الإيراد بنجاح! ({amount:,.0f} جنيه)")
+                                st.balloons()
+                                time.sleep(0.5)
                                 st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ خطأ: {e}")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # عرض المصروفات
-    expenses = get_today_expenses(st.session_state.username)
-    total_expenses = get_total_expenses_today(st.session_state.username)
-
-    if expenses:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("📊 عدد المصروفات", len(expenses))
+                            except
