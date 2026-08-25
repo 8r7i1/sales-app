@@ -130,6 +130,14 @@ def apply_custom_css():
         transition: width 0.5s;
     }
 
+    .archive-card {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+
     @media only screen and (max-width: 600px) {
         .main-header h1 { font-size: 28px; }
         .metric-value { font-size: 20px; }
@@ -388,6 +396,56 @@ def get_all_restaurants():
             conn.close()
             return restaurants
         except Exception as e:
+            return []
+    return []
+
+
+def get_archive_data(filters=None):
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+
+            query = """
+                SELECT 
+                    t.id,
+                    t.amount,
+                    t.payment_type,
+                    t.transaction_ref,
+                    t.closing_batch,
+                    t.created_at,
+                    t.username,
+                    t.restaurant_name,
+                    (SELECT SUM(amount) FROM expenses WHERE closing_batch = t.closing_batch) as total_expenses,
+                    (SELECT COUNT(*) FROM expenses WHERE closing_batch = t.closing_batch) as expense_count
+                FROM transactions t
+                WHERE t.status = 'closed'
+            """
+            params = []
+
+            if filters:
+                if filters.get('batch_id'):
+                    query += " AND t.closing_batch LIKE %s"
+                    params.append(f"%{filters['batch_id']}%")
+                if filters.get('date_from'):
+                    query += " AND DATE(t.created_at) >= %s"
+                    params.append(filters['date_from'])
+                if filters.get('date_to'):
+                    query += " AND DATE(t.created_at) <= %s"
+                    params.append(filters['date_to'])
+                if filters.get('payment_type') and filters['payment_type'] != 'الكل':
+                    query += " AND t.payment_type = %s"
+                    params.append(filters['payment_type'])
+
+            query += " ORDER BY t.created_at DESC"
+            cursor.execute(query, params)
+            data = cursor.fetchall()
+
+            cursor.close()
+            conn.close()
+            return data
+        except Exception as e:
+            st.error(f"❌ خطأ في جلب الأرشيف: {e}")
             return []
     return []
 
@@ -828,7 +886,7 @@ if nav_option == "📊 لوحة التحكم":
                 st.plotly_chart(fig, use_container_width=True)
 
 # ============================================
-# 2. الإيرادات (جديد)
+# 2. الإيرادات
 # ============================================
 
 elif nav_option == "💰 الإيرادات":
@@ -864,32 +922,4 @@ elif nav_option == "💰 الإيرادات":
 
                 transaction_ref = st.text_input("🔢 رقم العملية المرجعي", placeholder="مطلوب فقط للدفع عبر بنكك")
 
-                submit_revenue = st.form_submit_button("💾 حفظ الإيراد", use_container_width=True, type="primary")
-
-                if submit_revenue:
-                    if amount <= 0:
-                        st.warning("⚠️ يرجى إدخال مبلغ أكبر من الصفر!")
-                    elif payment_type == "بنكك" and not transaction_ref.strip():
-                        st.warning("⚠️ يرجى إدخال رقم العملية المرجعي!")
-                    else:
-                        conn = get_db_connection()
-                        if conn:
-                            try:
-                                cursor = conn.cursor()
-                                ref_val = transaction_ref.strip() if payment_type == "بنكك" else None
-                                query = """
-                                    INSERT INTO transactions (amount, payment_type, transaction_ref, status, username, restaurant_name) 
-                                    VALUES (%s, %s, %s, 'open', %s, %s)
-                                """
-                                cursor.execute(query, (amount, payment_type, ref_val, st.session_state.username,
-                                                       restaurant_name))
-                                conn.commit()
-                                log_activity(st.session_state.username, "إضافة إيراد",
-                                             f"المبلغ: {amount}, الطريقة: {payment_type}")
-                                cursor.close()
-                                conn.close()
-                                st.success(f"✅ تم إضافة الإيراد بنجاح! ({amount:,.0f} جنيه)")
-                                st.balloons()
-                                time.sleep(0.5)
-                                st.rerun()
-                            except
+                submit_revenue = st.form_submit
