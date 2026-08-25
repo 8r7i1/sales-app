@@ -1,80 +1,14 @@
 
+
 Pasted text.txt
 Document
 
-راجعت الكود المرفق، وأول خطأ مؤكد يمنع البرنامج من التشغيل موجود في السطر 850.
+نعم، الآن اتضح الجزء الناقص. الخطأ هنا هو أن السطر الأخير غير مكتمل:
 
+color_discrete_sequence=['#10B981', '#3B82F6
+ناقصه إغلاق ' ثم ] ثم ).
 
-🔴 الخطأ الرئيسي
-آخر سطر في الملف هو:
-
-color_discrete_sequenc e =['#10B981', '#3B82F6
-                         وهنا يوجد نص غير مغلق؛ لأن علامة الاقتباس ' بعد #3B82F6 مفقودة، وكذلك الملف نفسه ينتهي قبل إغلاق استدعاء px.pie().
-
-الصحيح مبدئيًا:
-
-color_discrete_sequenc e =['#10B981', '#3B82F6']
-ثم يجب إغلاق:
-
-fig = px.pie(
-    payment_totals,
-    values='المبلغ',
-    names='طريقة الدفع',
-    title='توزيع الإيرادات',
-    color_discrete_sequence=['#10B981', '#3B82F6']
-)
-⚠️ لكن هناك مشكلة أكبر
-الكود الذي أرسلته منتهٍ عند السطر 850 أثناء دالة الإيرادات، أي أن الجزء الأخير من البرنامج غير موجود في الملف المرفق. لذلك لا أستطيع أن أعطيك نسخة "معدلة كاملة" وأدّعي أنها مكتملة؛ لأنني سأضطر لاختراع الأجزاء المفقودة مثل:
-
-صفحة المصروفات
-
-صفحة أرشيف العمليات
-
-صفحة إقفال اليومية
-
-بقية دالة الرسم البياني
-
-وربما الجداول والاستعلامات المرتبطة بها
-
-والملف فعليًا يحتوي على 850 سطرًا فقط وينتهي في منتصف الكود.
-
-إذا كان هذا هو الكود الكامل الذي لديك، أستطيع إعادة بنائه وإكمال الأجزاء الناقصة مع إصلاح الأخطاء.
-
-أما إذا كان الكود الأصلي أطول من ذلك، فأرسل الجزء المتبقي من السطر 851 وما بعده، وسأراجع الكود كاملًا وأرسل لك نسخة واحدة جاهزة للتشغيل.
-
-
-
-transactions = get_user_transactions(st.session_state.username)
-open_transactions = [t for t in transactions if t.get('status') == 'open']
-
-if open_transactions:
-    df = pd.DataFrame(open_transactions)
-df_display = df[['id', 'amount', 'payment_type', 'transaction_ref', 'created_at']]
-df_display.columns = ['رقم العملية', 'المبلغ', 'طريقة الدفع', 'المرجع', 'التاريخ']
-st.dataframe(df_display, use_container_width=True)
-
-# إجمالي حسب طريقة الدفع
-st.subheader("📊 توزيع الإيرادات حسب طريقة الدفع")
-payment_totals = df.groupby('payment_type')['amount'].sum().reset_index()
-payment_totals.columns = ['طريقة الدفع', 'المبلغ']
-st.dataframe(payment_totals, use_container_width=True)
-
-# رسم بياني
-if not payment_totals.empty:
-    fig = px.pie(
-        payment_totals,
-        values='المبلغ',
-        names='طريقة الدفع',
-        title='توزيع الإيرادات',
-        color_discrete_sequence=['#10B981', '#3B82F6
-
-
-                                 نعم، الآن اتضح الجزء الناقص. الخطأ هنا هو أن السطر الأخير غير مكتمل:
-
-color_discrete_sequenc e =['#10B981', '#3B82F6
-                         ناقصه إغلاق ' ثم ] ثم ).
-
-                         والجزء الصحيح كاملًا هو:
+والجزء الصحيح كاملًا هو:
 
 transactions = get_user_transactions(st.session_state.username)
 open_transactions = [t for t in transactions if t.get('status') == 'open']
@@ -82,52 +16,52 @@ open_transactions = [t for t in transactions if t.get('status') == 'open']
 if open_transactions:
     df = pd.DataFrame(open_transactions)
 
-df_display = df[
-    ['id', 'amount', 'payment_type', 'transaction_ref', 'created_at']
-]
+    df_display = df[
+        ['id', 'amount', 'payment_type', 'transaction_ref', 'created_at']
+    ]
 
-df_display.columns = [
-    'رقم العملية',
-    'المبلغ',
-    'طريقة الدفع',
-    'المرجع',
-    'التاريخ'
-]
+    df_display.columns = [
+        'رقم العملية',
+        'المبلغ',
+        'طريقة الدفع',
+        'المرجع',
+        'التاريخ'
+    ]
 
-st.dataframe(df_display, use_container_width=True)
+    st.dataframe(df_display, use_container_width=True)
 
-# إجمالي حسب طريقة الدفع
-st.subheader("📊 توزيع الإيرادات حسب طريقة الدفع")
+    # إجمالي حسب طريقة الدفع
+    st.subheader("📊 توزيع الإيرادات حسب طريقة الدفع")
 
-payment_totals = (
-    df.groupby('payment_type')['amount']
-    .sum()
-    .reset_index()
-)
-
-payment_totals.columns = ['طريقة الدفع', 'المبلغ']
-
-st.dataframe(payment_totals, use_container_width=True)
-
-# رسم بياني
-if not payment_totals.empty:
-    fig = px.pie(
-        payment_totals,
-        values='المبلغ',
-        names='طريقة الدفع',
-        title='توزيع الإيرادات',
-        color_discrete_sequence=['#10B981', '#3B82F6']
+    payment_totals = (
+        df.groupby('payment_type')['amount']
+        .sum()
+        .reset_index()
     )
 
-fig.update_traces(
-    textposition='inside',
-    textinfo='percent+label'
-)
+    payment_totals.columns = ['طريقة الدفع', 'المبلغ']
 
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
+    st.dataframe(payment_totals, use_container_width=True)
+
+    # رسم بياني
+    if not payment_totals.empty:
+        fig = px.pie(
+            payment_totals,
+            values='المبلغ',
+            names='طريقة الدفع',
+            title='توزيع الإيرادات',
+            color_discrete_sequence=['#10B981', '#3B82F6']
+        )
+
+        fig.update_traces(
+            textposition='inside',
+            textinfo='percent+label'
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
 ملاحظة مهمة
 أنا أنصحك باستخدام هذه النسخة بدل مجرد إضافة الأقواس؛ لأنني أضفت أيضًا:
 
@@ -203,9 +137,49 @@ Ghost Sweet: ghost / ghost123
 
 
 
-                                             Library
-                                             /
-                                             sales_system_app.py
+File "/mount/src/sales-app/main.py", line 5
+  راجعت الكود المرفق، وأول خطأ مؤكد يمنع البرنامج من التشغيل موجود في السطر 850.
+                    ^
+SyntaxError: invalid character '،' (U+060C)
+
+صحيح، الخطأ واضح الآن. الملف الذي شغّلته يحتوي على نص شرحي عربي داخل ملف Python نفسه، ولذلك ظهر:
+
+SyntaxError: invalid character '،' (U+060C)
+وهذا خطئي في النسخة السابقة؛ النص:
+
+راجعت الكود المرفق، وأول خطأ مؤكد...
+لا يجب أن يكون داخل main.py.
+
+قمت بفحص ملف Python نفسه، والنسخة الموجودة عندي الآن تمر من فحص Python بدون SyntaxError.
+
+الحل
+لا تنسخ النص السابق إلى main.py. استخدم ملف الكود فقط:
+
+
+ثم في مشروع Streamlit:
+
+احذف محتوى main.py القديم بالكامل.
+
+ضع محتوى الملف الذي حملته مكانه.
+
+احفظ الملف.
+
+شغّل التطبيق مرة أخرى.
+
+إذا ظهر لك بعد ذلك أي Error آخر، أرسله لي كما ظهر بالضبط، وسأصلحه لك؛ لأن الخطأ الحالي تحديدًا ليس من MySQL ولا من Streamlit، بل من دخول نص عربي خارج تعليق Python إلى الملف.
+
+
+You're on the free plan
+ChatGPT gets less accurate and may forget details in long conversations. Upgrade to chat longer with better memory.
+
+Get Plus
+
+New chat
+
+
+Library
+/
+sales_system_app.py
 
 
 import streamlit as st
@@ -1133,7 +1107,7 @@ st.markdown(
             <span style="background:rgba(255,255,255,.18);
                          padding:7px 18px; border-radius:20px;">
                 {"👨‍💻" + username + " - صلاحية كاملة"
-    if is_dev else "👨‍💼 " + username + " - " + restaurant_name}
+                 if is_dev else "👨‍💼 " + username + " - " + restaurant_name}
             </span>
         </div>
     </div>
@@ -1470,8 +1444,8 @@ elif nav_option == "💰 الإيرادات":
                     st.warning("⚠️ يجب أن يكون المبلغ أكبر من صفر.")
 
                 elif (
-                        payment_type == "بنكك"
-                        and not transaction_ref.strip()
+                    payment_type == "بنكك"
+                    and not transaction_ref.strip()
                 ):
                     st.warning("⚠️ رقم العملية المرجعي مطلوب لبنكك.")
 
@@ -1483,11 +1457,11 @@ elif nav_option == "💰 الإيرادات":
                     )
 
                     if add_transaction(
-                            username,
-                            restaurant_name,
-                            amount,
-                            payment_type,
-                            ref,
+                        username,
+                        restaurant_name,
+                        amount,
+                        payment_type,
+                        ref,
                     ):
                         log_activity(
                             username,
@@ -1512,7 +1486,7 @@ elif nav_option == "💰 الإيرادات":
         st.metric(
             "📊 عدد العمليات",
             cash_count + bank_count,
-            )
+        )
 
     with c2:
         st.metric(
@@ -1647,11 +1621,11 @@ elif nav_option == "💸 المصروفات":
 
                 else:
                     if add_expense(
-                            username,
-                            restaurant_name,
-                            description.strip(),
-                            amount,
-                            category,
+                        username,
+                        restaurant_name,
+                        description.strip(),
+                        amount,
+                        category,
                     ):
                         log_activity(
                             username,
@@ -1892,10 +1866,10 @@ elif nav_option == "🔒 إقفال اليومية":
     )
 
     if st.button(
-            "🔒 إقفال اليومية الآن",
-            use_container_width=True,
-            type="primary",
-            disabled=not confirm,
+        "🔒 إقفال اليومية الآن",
+        use_container_width=True,
+        type="primary",
+        disabled=not confirm,
     ):
 
         result = create_closing(username, note.strip())
