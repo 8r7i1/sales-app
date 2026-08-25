@@ -245,10 +245,7 @@ def ensure_tables_exist():
     return False
 
 
-# ===================== دالة جلب بيانات الأرشيف =====================
-
 def get_archive_data(filters=None):
-    """جلب بيانات الأرشيف مع فلترة متقدمة"""
     conn = get_db_connection()
     if conn:
         try:
@@ -301,7 +298,7 @@ def get_archive_data(filters=None):
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = ""
-    st.session_state.page_num = 0
+    st.session_state.archive_page = 0
 
 ensure_users_exist()
 ensure_tables_exist()
@@ -356,7 +353,6 @@ else:
         log_activity(st.session_state.username, "تسجيل خروج", "تم تسجيل الخروج")
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.session_state.page_num = 0
         st.rerun()
 
     st.sidebar.markdown(
@@ -537,12 +533,11 @@ else:
                 except Exception as e:
                     st.error(f"❌ خطأ: {e}")
 
-    # ====== 3. أرشيف العمليات (المطور) ======
+    # ====== 3. أرشيف العمليات ======
     elif nav_option == "📅 أرشيف العمليات":
         st.title("📅 أرشيف العمليات والمصروفات")
         st.markdown("---")
 
-        # ===== فلترة متقدمة =====
         with st.expander("🔍 فلترة متقدمة", expanded=True):
             col_filter1, col_filter2, col_filter3 = st.columns(3)
 
@@ -567,10 +562,8 @@ else:
                 filter_max_amount = st.number_input("💰 أعلى مبلغ", min_value=0, value=100000, step=100)
 
             if st.button("🔍 بحث", use_container_width=True, type="primary"):
-                st.session_state.search_clicked = True
                 st.rerun()
 
-        # ===== جلب البيانات =====
         filters = {}
         if 'filter_batch' in locals() and filter_batch:
             filters['batch_id'] = filter_batch
@@ -584,7 +577,6 @@ else:
         archive_data = get_archive_data(filters)
 
         if archive_data:
-            # ===== إحصائيات الأرشيف =====
             df_archive = pd.DataFrame(archive_data)
 
             total_sales = df_archive['amount'].sum()
@@ -608,13 +600,11 @@ else:
 
             st.markdown("---")
 
-            # ===== رسوم بيانية =====
             st.subheader("📈 الرسوم البيانية")
 
             col_chart1, col_chart2 = st.columns(2)
 
             with col_chart1:
-                # رسم بياني للمبيعات حسب التاريخ
                 df_daily = df_archive.groupby(pd.to_datetime(df_archive['created_at']).dt.date).agg({
                     'amount': 'sum',
                     'total_expenses': 'sum'
@@ -645,7 +635,6 @@ else:
                 st.plotly_chart(fig, use_container_width=True)
 
             with col_chart2:
-                # رسم بياني دائري لتوزيع طرق الدفع
                 payment_dist = df_archive.groupby('payment_type').size().reset_index()
                 payment_dist.columns = ['طريقة الدفع', 'العدد']
 
@@ -658,20 +647,13 @@ else:
                 )
                 st.plotly_chart(fig_pie, use_container_width=True)
 
-            # ===== عرض البيانات في جدول منظم =====
             st.subheader("📋 العمليات المقفلة")
 
-            # تهيئة حالة التصفح
-            if "archive_page" not in st.session_state:
-                st.session_state.archive_page = 0
-
-            # تحضير البيانات للعرض
             df_display = df_archive.copy()
             df_display['created_at'] = pd.to_datetime(df_display['created_at']).dt.strftime('%Y-%m-%d %H:%M')
             df_display['total_expenses'] = df_display['total_expenses'].fillna(0).astype(int)
             df_display['net'] = df_display['amount'] - df_display['total_expenses']
 
-            # إعادة تسمية الأعمدة
             df_display = df_display.rename(columns={
                 'id': 'رقم العملية',
                 'amount': 'المبلغ',
@@ -684,12 +666,10 @@ else:
                 'net': 'صافي الربح'
             })
 
-            # تحديد الأعمدة للعرض
             columns_to_show = ['رقم العملية', 'المبلغ', 'طريقة الدفع', 'المرجع', 'رقم الإقفال', 'التاريخ', 'المصروفات',
                                'صافي الربح']
             df_display = df_display[columns_to_show]
 
-            # التصفح
             rows_per_page = 10
             total_pages = (len(df_display) + rows_per_page - 1) // rows_per_page
 
@@ -708,7 +688,6 @@ else:
 
                 st.markdown("---")
 
-            # عرض الصفحة الحالية
             start_idx = st.session_state.archive_page * rows_per_page
             end_idx = min(start_idx + rows_per_page, len(df_display))
             df_page = df_display.iloc[start_idx:end_idx]
@@ -724,17 +703,15 @@ else:
                 }
             )
 
-            # ===== زر تصدير =====
             st.markdown("---")
             col_export1, col_export2, col_export3 = st.columns([1, 1, 1])
             with col_export1:
-                if st.button("📥 تصدير إلى Excel", use_container_width=True):
+                if st.button("📥 تصدير إلى CSV", use_container_width=True):
                     df_export = df_archive.copy()
                     df_export['created_at'] = pd.to_datetime(df_export['created_at']).dt.strftime('%Y-%m-%d %H:%M')
                     df_export['total_expenses'] = df_export['total_expenses'].fillna(0)
                     df_export['net'] = df_export['amount'] - df_export['total_expenses']
 
-                    # إعادة تسمية الأعمدة
                     df_export = df_export.rename(columns={
                         'id': 'رقم العملية',
                         'amount': 'المبلغ',
@@ -762,7 +739,6 @@ else:
         else:
             st.info("📭 لا توجد عمليات مقفلة في الأرشيف")
 
-            # عرض إرشادات
             with st.expander("💡 كيف يتم إضافة البيانات إلى الأرشيف؟"):
                 st.markdown("""
                     1. **قم بتسجيل المبيعات** في صفحة "تسجيل مبيعات"
@@ -839,9 +815,14 @@ else:
                     cursor.close()
                     conn.close()
 
-                    st.success(f"✅ تم إقفال اليومية بنجاح!")
+                    st.success("✅ تم إقفال اليومية بنجاح!")
                     st.info(f"📋 رقم الإقفال: **{batch_id}**")
                     st.info(f"📊 العمليات المقفلة: **{transactions_closed}**")
                     st.info(f"💰 المصروفات المقفلة: **{expenses_closed}**")
-                    st.info(f"📈 ص
-                            
+                    st.info(f"📈 صافي الربح: **{net_profit:,.0f} جنيه**")
+                    st.balloons()
+                    time.sleep(0.5)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ خطأ: {e}")
+                    
