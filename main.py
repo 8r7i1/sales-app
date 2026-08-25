@@ -7,16 +7,196 @@ import time
 import plotly.express as px
 import plotly.graph_objects as go
 
+# ============================================
 # إعدادات صفحة Streamlit
+# ============================================
 st.set_page_config(
-    page_title="نظام المبيعات والمصروفات - حسن",
-    page_icon="📊",
+    page_title="نظام المطاعم - المبيعات والمصروفات",
+    page_icon="🍽️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 
-# ===================== دوال المساعدة =====================
+# ============================================
+# CSS المخصص للواجهة
+# ============================================
+def apply_custom_css():
+    """تطبيق التنسيقات المخصصة للواجهة"""
+    st.markdown("""
+    <style>
+    /* خطوط جميلة */
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap');
+    * {
+        font-family: 'Tajawal', sans-serif;
+    }
+
+    /* خلفية الصفحة */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+
+    /* بطاقات المعلومات */
+    .metric-card {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: 1px solid rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .metric-icon {
+        font-size: 30px;
+        margin-bottom: 10px;
+    }
+    .metric-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #1E3A8A;
+    }
+    .metric-label {
+        color: #666;
+        font-size: 14px;
+    }
+
+    /* أزرار مخصصة */
+    .stButton button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 24px;
+        font-weight: bold;
+        transition: all 0.3s;
+        width: 100%;
+    }
+    .stButton button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    /* شريط جانبي */
+    .css-1d391kg {
+        background: linear-gradient(180deg, #1E3A8A 0%, #1a1a2e 100%);
+    }
+    .css-1d391kg .stMarkdown {
+        color: white;
+    }
+
+    /* بطاقات النماذج */
+    .form-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+
+    /* عنوان رئيسي */
+    .main-header {
+        text-align: center;
+        padding: 30px 0;
+        background: linear-gradient(135deg, #1E3A8A 0%, #667eea 100%);
+        border-radius: 20px;
+        margin-bottom: 30px;
+        color: white;
+        box-shadow: 0 10px 40px rgba(30, 58, 138, 0.3);
+    }
+    .main-header h1 {
+        font-size: 45px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .main-header p {
+        font-size: 18px;
+        opacity: 0.9;
+        margin: 10px 0 0 0;
+    }
+
+    /* شعار */
+    .logo-container {
+        text-align: center;
+        padding: 20px 0;
+    }
+    .logo-text {
+        font-size: 60px;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    /* صندوق تسجيل الدخول */
+    .login-box {
+        background: rgba(255,255,255,0.95);
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        max-width: 450px;
+        margin: 0 auto;
+    }
+
+    /* أيقونات الحالة */
+    .status-open {
+        color: #10B981;
+        font-weight: bold;
+    }
+    .status-closed {
+        color: #EF4444;
+        font-weight: bold;
+    }
+
+    /* تحسينات الموبايل */
+    @media only screen and (max-width: 600px) {
+        .main-header h1 {
+            font-size: 28px;
+        }
+        .metric-value {
+            font-size: 20px;
+        }
+        .stButton button {
+            width: 100% !important;
+        }
+        .row-widget {
+            flex-wrap: wrap !important;
+        }
+    }
+
+    /* شريط التقدم */
+    .custom-progress {
+        background: #e0e0e0;
+        border-radius: 10px;
+        height: 10px;
+        margin: 10px 0;
+        overflow: hidden;
+    }
+    .custom-progress-bar {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.5s;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# تطبيق التنسيقات
+apply_custom_css()
+
+
+# ============================================
+# دوال المساعدة
+# ============================================
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -65,7 +245,7 @@ def authenticate_user(username, password):
         try:
             cursor = conn.cursor(dictionary=True)
             hashed_pw = hash_password(password)
-            query = "SELECT * FROM users WHERE username = %s AND password = %s"
+            query = "SELECT * FROM users WHERE username = %s AND password = %s AND is_active = TRUE"
             cursor.execute(query, (username.strip(), hashed_pw))
             user = cursor.fetchone()
             cursor.close()
@@ -76,14 +256,88 @@ def authenticate_user(username, password):
     return None
 
 
-def get_daily_totals():
+# ============================================
+# دوال الصلاحيات
+# ============================================
+
+def get_user_role(username):
     conn = get_db_connection()
     if conn:
         try:
             cursor = conn.cursor(dictionary=True)
-            cursor.execute(
-                "SELECT payment_type, SUM(amount) as total, COUNT(*) as count FROM transactions WHERE status = 'open' GROUP BY payment_type"
-            )
+            cursor.execute("SELECT role, restaurant_name FROM users WHERE username = %s", (username,))
+            user = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            return user
+        except Exception as e:
+            return None
+    return None
+
+
+def is_developer(username):
+    user = get_user_role(username)
+    return user and user['role'] == 'admin'
+
+
+def get_user_restaurant(username):
+    user = get_user_role(username)
+    return user['restaurant_name'] if user else None
+
+
+def get_user_transactions(username):
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            user = get_user_role(username)
+            if user and user['role'] == 'admin':
+                cursor.execute("SELECT * FROM transactions ORDER BY created_at DESC")
+            else:
+                cursor.execute("SELECT * FROM transactions WHERE username = %s ORDER BY created_at DESC", (username,))
+            transactions = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return transactions
+        except Exception as e:
+            return []
+    return []
+
+
+def get_user_expenses(username):
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            user = get_user_role(username)
+            if user and user['role'] == 'admin':
+                cursor.execute("SELECT * FROM expenses ORDER BY expense_date DESC")
+            else:
+                cursor.execute("SELECT * FROM expenses WHERE username = %s ORDER BY expense_date DESC", (username,))
+            expenses = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return expenses
+        except Exception as e:
+            return []
+    return []
+
+
+def get_daily_totals(username):
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            user = get_user_role(username)
+            if user and user['role'] == 'admin':
+                cursor.execute(
+                    "SELECT payment_type, SUM(amount) as total, COUNT(*) as count FROM transactions WHERE status = 'open' GROUP BY payment_type"
+                )
+            else:
+                cursor.execute(
+                    "SELECT payment_type, SUM(amount) as total, COUNT(*) as count FROM transactions WHERE status = 'open' AND username = %s GROUP BY payment_type",
+                    (username,)
+                )
             results = cursor.fetchall()
             cursor.close()
             conn.close()
@@ -107,16 +361,23 @@ def get_daily_totals():
     return 0, 0, 0, 0
 
 
-def get_today_expenses():
+def get_today_expenses(username):
     conn = get_db_connection()
     if conn:
         try:
             cursor = conn.cursor(dictionary=True)
             today = date.today()
-            cursor.execute(
-                "SELECT id, description, amount, category, expense_date, created_by, created_at FROM expenses WHERE expense_date = %s AND closing_batch IS NULL",
-                (today,)
-            )
+            user = get_user_role(username)
+            if user and user['role'] == 'admin':
+                cursor.execute(
+                    "SELECT id, description, amount, category, expense_date, username, restaurant_name, created_at FROM expenses WHERE expense_date = %s AND closing_batch IS NULL",
+                    (today,)
+                )
+            else:
+                cursor.execute(
+                    "SELECT id, description, amount, category, expense_date, username, restaurant_name, created_at FROM expenses WHERE expense_date = %s AND closing_batch IS NULL AND username = %s",
+                    (today, username)
+                )
             expenses = cursor.fetchall()
             cursor.close()
             conn.close()
@@ -126,16 +387,23 @@ def get_today_expenses():
     return []
 
 
-def get_total_expenses_today():
+def get_total_expenses_today(username):
     conn = get_db_connection()
     if conn:
         try:
             cursor = conn.cursor()
             today = date.today()
-            cursor.execute(
-                "SELECT SUM(amount) as total FROM expenses WHERE expense_date = %s AND closing_batch IS NULL",
-                (today,)
-            )
+            user = get_user_role(username)
+            if user and user['role'] == 'admin':
+                cursor.execute(
+                    "SELECT SUM(amount) as total FROM expenses WHERE expense_date = %s AND closing_batch IS NULL",
+                    (today,)
+                )
+            else:
+                cursor.execute(
+                    "SELECT SUM(amount) as total FROM expenses WHERE expense_date = %s AND closing_batch IS NULL AND username = %s",
+                    (today, username)
+                )
             result = cursor.fetchone()
             cursor.close()
             conn.close()
@@ -160,6 +428,22 @@ def get_expense_categories():
     return ['إيجار', 'رواتب', 'كهرباء', 'ماء', 'إنترنت', 'مواصلات', 'مشتريات', 'أخرى']
 
 
+def get_all_restaurants():
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT id, username, full_name, restaurant_name FROM users WHERE role = 'user' AND is_active = TRUE")
+            restaurants = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return restaurants
+        except Exception as e:
+            return []
+    return []
+
+
 def ensure_users_exist():
     conn = get_db_connection()
     if conn:
@@ -170,16 +454,16 @@ def ensure_users_exist():
 
             if result[0] == 0:
                 users_data = [
-                    ('admin', hash_password('admin123'), 'مدير النظام', 'admin'),
-                    ('user1', hash_password('user123'), 'مستخدم تجريبي', 'user'),
-                    ('manager', hash_password('manager123'), 'مدير مبيعات', 'manager'),
-                    ('user', hash_password('user123'), 'مستخدم عادي', 'user')
+                    ('developer', hash_password('dev123'), 'المطور', 'admin', 'المطور', True),
+                    ('karoly', hash_password('karoly123'), 'مطعم كرولي الصحافة', 'user', 'مطعم كرولي الصحافة', True),
+                    ('ghost', hash_password('ghost123'), 'محل حلويات Ghost Sweet', 'user', 'محل حلويات Ghost Sweet',
+                     True),
                 ]
 
-                for username, password, full_name, role in users_data:
+                for username, password, full_name, role, restaurant_name, is_active in users_data:
                     cursor.execute(
-                        "INSERT INTO users (username, password, full_name, role) VALUES (%s, %s, %s, %s)",
-                        (username, password, full_name, role)
+                        "INSERT INTO users (username, password, full_name, role, restaurant_name, is_active) VALUES (%s, %s, %s, %s, %s, %s)",
+                        (username, password, full_name, role, restaurant_name, is_active)
                     )
 
                 conn.commit()
@@ -214,10 +498,7 @@ def ensure_tables_exist():
                 ('مشتريات', '🛒'), ('أخرى', '📌')
             ]
             for name, icon in categories:
-                cursor.execute(
-                    "INSERT IGNORE INTO expense_categories (name, icon) VALUES (%s, %s)",
-                    (name, icon)
-                )
+                cursor.execute("INSERT IGNORE INTO expense_categories (name, icon) VALUES (%s, %s)", (name, icon))
 
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS expenses (
@@ -227,11 +508,13 @@ def ensure_tables_exist():
                     category VARCHAR(50) NOT NULL,
                     expense_date DATE NOT NULL,
                     closing_batch VARCHAR(50),
-                    created_by VARCHAR(50),
+                    username VARCHAR(50),
+                    restaurant_name VARCHAR(100),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     INDEX idx_date (expense_date),
                     INDEX idx_batch (closing_batch),
-                    INDEX idx_category (category)
+                    INDEX idx_category (category),
+                    INDEX idx_username (username)
                 )
             """)
 
@@ -245,75 +528,55 @@ def ensure_tables_exist():
     return False
 
 
-def get_archive_data(filters=None):
-    conn = get_db_connection()
-    if conn:
-        try:
-            cursor = conn.cursor(dictionary=True)
-
-            query = """
-                SELECT 
-                    t.id,
-                    t.amount,
-                    t.payment_type,
-                    t.transaction_ref,
-                    t.closing_batch,
-                    t.created_at,
-                    (SELECT SUM(amount) FROM expenses WHERE closing_batch = t.closing_batch) as total_expenses,
-                    (SELECT COUNT(*) FROM expenses WHERE closing_batch = t.closing_batch) as expense_count
-                FROM transactions t
-                WHERE t.status = 'closed'
-            """
-            params = []
-
-            if filters:
-                if filters.get('batch_id'):
-                    query += " AND t.closing_batch LIKE %s"
-                    params.append(f"%{filters['batch_id']}%")
-                if filters.get('date_from'):
-                    query += " AND DATE(t.created_at) >= %s"
-                    params.append(filters['date_from'])
-                if filters.get('date_to'):
-                    query += " AND DATE(t.created_at) <= %s"
-                    params.append(filters['date_to'])
-                if filters.get('payment_type') and filters['payment_type'] != 'الكل':
-                    query += " AND t.payment_type = %s"
-                    params.append(filters['payment_type'])
-
-            query += " ORDER BY t.created_at DESC"
-            cursor.execute(query, params)
-            data = cursor.fetchall()
-
-            cursor.close()
-            conn.close()
-            return data
-        except Exception as e:
-            st.error(f"❌ خطأ في جلب الأرشيف: {e}")
-            return []
-    return []
-
-
-# ===================== تهيئة الجلسة =====================
+# ============================================
+# تهيئة الجلسة
+# ============================================
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.session_state.archive_page = 0
+    st.session_state.show_restaurants = False
 
 ensure_users_exist()
 ensure_tables_exist()
 
-# ===================== واجهة تسجيل الدخول =====================
+# ============================================
+# واجهة تسجيل الدخول
+# ============================================
 
 if not st.session_state.logged_in:
-    st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>🔐 تسجيل الدخول - نظام المبيعات</h2>",
-                unsafe_allow_html=True)
+    # تنسيق صفحة تسجيل الدخول
+    st.markdown("""
+        <div style='min-height: 100vh; display: flex; align-items: center; justify-content: center;'>
+            <div style='width: 100%; max-width: 500px;'>
+    """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    # الشعار
+    st.markdown("""
+        <div class='logo-container'>
+            <div class='logo-text'>🍽️</div>
+            <h1 style='color: #1E3A8A; font-size: 35px; margin: 10px 0;'>نظام المطاعم</h1>
+            <p style='color: #666; font-size: 16px;'>إدارة المبيعات والمصروفات</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # صندوق تسجيل الدخول
+    with st.container():
+        st.markdown('<div class="login-box">', unsafe_allow_html=True)
+
         with st.form("login_form"):
-            username_input = st.text_input("👤 اسم المستخدم:")
-            password_input = st.text_input("🔑 كلمة المرور:", type="password")
+            st.markdown("<h3 style='text-align: center; color: #1E3A8A;'>🔐 تسجيل الدخول</h3>", unsafe_allow_html=True)
+
+            username_input = st.text_input("👤 اسم المستخدم", placeholder="أدخل اسم المستخدم")
+            password_input = st.text_input("🔑 كلمة المرور", type="password", placeholder="أدخل كلمة المرور")
+
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                st.checkbox("تذكرني 🔑")
+            with col2:
+                st.markdown("[🔓 نسيت كلمة المرور؟]")
+
             submit_login = st.form_submit_button("🚪 دخول النظام", use_container_width=True)
 
             if submit_login:
@@ -330,124 +593,313 @@ if not st.session_state.logged_in:
                     else:
                         st.error("❌ اسم المستخدم أو كلمة المرور غير صحيحة!")
 
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown(
-        "<p style='text-align: center; color: gray; font-size: 14px;'>Developed by <b>HASSAN ELNOUSH</b> © 2026</p>",
-        unsafe_allow_html=True
-    )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# ===================== الواجهة الرئيسية =====================
+    st.markdown("""
+        <hr>
+        <p style='text-align: center; color: gray; font-size: 14px;'>
+            Developed by <b>المطور</b> © 2026
+        </p>
+    """, unsafe_allow_html=True)
 
-else:
-    # الشريط الجانبي
-    st.sidebar.markdown(f"### 👋 مرحباً، {st.session_state.username}")
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    st.stop()
+
+# ============================================
+# الواجهة الرئيسية (بعد تسجيل الدخول)
+# ============================================
+
+# الحصول على معلومات المستخدم
+user = get_user_role(st.session_state.username)
+is_dev = user and user['role'] == 'admin'
+restaurant_name = user['restaurant_name'] if user else ''
+
+# ============================================
+# الهيدر الرئيسي
+# ============================================
+
+st.markdown(f"""
+    <div class='main-header'>
+        <div style='display: flex; align-items: center; justify-content: center; gap: 20px;'>
+            <span style='font-size: 40px;'>🍽️</span>
+            <div>
+                <h1>نظام المطاعم</h1>
+                <p>إدارة المبيعات والمصروفات</p>
+            </div>
+        </div>
+        <div style='margin-top: 10px;'>
+            <span style='background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px;'>
+                {f"👨‍💻 {st.session_state.username} - {restaurant_name}" if not is_dev else f"👨‍💻 {st.session_state.username} - صلاحية كاملة"}
+            </span>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+# ============================================
+# الشريط الجانبي
+# ============================================
+
+with st.sidebar:
+    # صورة البروفايل
+    st.markdown(f"""
+        <div style='text-align: center; padding: 20px 0;'>
+            <div style='width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white;'>
+                {'' if is_dev else '🍽️'}
+                {'' if not is_dev else '👨‍💻'}
+            </div>
+            <h3 style='color: white; margin: 10px 0 5px 0;'>{st.session_state.username}</h3>
+            <p style='color: rgba(255,255,255,0.8); font-size: 14px;'>
+                {f"🏪 {restaurant_name}" if not is_dev else "👨‍💻 المطور"}
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
     st.sidebar.markdown("---")
 
+    # القائمة
     nav_option = st.sidebar.radio(
         "📋 القائمة الرئيسية",
-        ["📊 تسجيل مبيعات", "💰 المصروفات", "📅 أرشيف العمليات", "🔒 إقفال اليومية"]
+        ["📊 لوحة التحكم", "💰 المصروفات", "📅 الأرشيف", "🔒 إقفال اليومية"]
     )
 
     st.sidebar.markdown("---")
+
+    # إدارة المطاعم (للمطور فقط)
+    if is_dev:
+        if st.sidebar.button("👥 إدارة المطاعم", use_container_width=True):
+            st.session_state.show_restaurants = not st.session_state.show_restaurants
+            st.rerun()
+
+    # زر تسجيل الخروج
     if st.sidebar.button("🚪 تسجيل الخروج", use_container_width=True):
         log_activity(st.session_state.username, "تسجيل خروج", "تم تسجيل الخروج")
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.rerun()
 
-    st.sidebar.markdown(
-        f"<p style='text-align: center; color: gray; font-size: 12px;'>👨‍💻 Developer: <b>HASSAN ELNOUSH</b><br>📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>",
-        unsafe_allow_html=True
-    )
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(f"""
+        <p style='text-align: center; color: rgba(255,255,255,0.6); font-size: 12px;'>
+            👨‍💻 المطور<br>
+            📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}
+        </p>
+    """, unsafe_allow_html=True)
 
-    # ====== 1. تسجيل مبيعات ======
-    if nav_option == "📊 تسجيل مبيعات":
-        st.title("📊 لوحة تحكم نظام المبيعات")
+# ============================================
+# إدارة المطاعم (للمطور فقط)
+# ============================================
 
-        cash_total, bank_total, cash_count, bank_count = get_daily_totals()
-        expenses_today = get_total_expenses_today()
-        total_transactions = cash_count + bank_count
-        total_amount = cash_total + bank_total
-        net_profit = total_amount - expenses_today
+if st.session_state.show_restaurants and is_dev:
+    st.title("👥 إدارة المطاعم")
 
-        col1, col2, col3, col4 = st.columns(4)
+    restaurants = get_all_restaurants()
+    if restaurants:
+        df = pd.DataFrame(restaurants)
+        st.dataframe(df, use_container_width=True)
+
+        col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("📊 عدد العمليات اليوم", total_transactions)
+            st.metric("📊 عدد المطاعم", len(restaurants))
         with col2:
-            st.metric("💰 إجمالي المبيعات", f"{total_amount:,.0f} جنيه")
+            total_trans = 0
+            for r in restaurants:
+                trans = get_user_transactions(r['username'])
+                total_trans += len(trans)
+            st.metric("💰 إجمالي العمليات", total_trans)
         with col3:
-            st.metric("💸 المصروفات اليوم", f"{expenses_today:,.0f} جنيه", delta="-", delta_color="inverse")
-        with col4:
-            st.metric("📈 صافي الربح", f"{net_profit:,.0f} جنيه")
+            st.metric("📅 آخر تحديث", datetime.now().strftime("%H:%M"))
 
+        # إضافة مطعم جديد
+        with st.expander("➕ إضافة مطعم جديد", expanded=False):
+            with st.form("add_restaurant_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    new_username = st.text_input("👤 اسم المستخدم")
+                    new_password = st.text_input("🔑 كلمة المرور", type="password")
+                with col2:
+                    new_full_name = st.text_input("📛 الاسم الكامل")
+                    new_restaurant_name = st.text_input("🏪 اسم المطعم")
+
+                submit_rest = st.form_submit_button("💾 إضافة المطعم", use_container_width=True)
+
+                if submit_rest:
+                    if not new_username or not new_password:
+                        st.warning("⚠️ يرجى إدخال جميع البيانات")
+                    else:
+                        conn = get_db_connection()
+                        if conn:
+                            try:
+                                cursor = conn.cursor()
+                                hashed_pw = hash_password(new_password)
+                                cursor.execute("""
+                                    INSERT INTO users (username, password, full_name, role, restaurant_name, is_active)
+                                    VALUES (%s, %s, %s, 'user', %s, TRUE)
+                                """, (new_username, hashed_pw, new_full_name, new_restaurant_name))
+                                conn.commit()
+                                cursor.close()
+                                conn.close()
+                                st.success(f"✅ تم إضافة المطعم {new_restaurant_name} بنجاح!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ خطأ: {e}")
+    else:
+        st.info("📭 لا توجد مطاعم مسجلة")
+
+    if st.button("🔙 العودة للوحة الرئيسية", use_container_width=True):
+        st.session_state.show_restaurants = False
+        st.rerun()
+    st.stop()
+
+# ============================================
+# 1. لوحة التحكم (Dashboard)
+# ============================================
+
+if nav_option == "📊 لوحة التحكم":
+    st.markdown(f"""
+        <div style='background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;'>
+            <h2 style='color: #1E3A8A; margin: 0;'>
+                📊 لوحة التحكم {f" - {restaurant_name}" if not is_dev else ""}
+            </h2>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # جلب البيانات
+    cash_total, bank_total, cash_count, bank_count = get_daily_totals(st.session_state.username)
+    expenses_today = get_total_expenses_today(st.session_state.username)
+    total_transactions = cash_count + bank_count
+    total_amount = cash_total + bank_total
+    net_profit = total_amount - expenses_today
+
+    # بطاقات المعلومات
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown(f"""
+            <div class='metric-card'>
+                <div class='metric-icon'>📊</div>
+                <div class='metric-value'>{total_transactions}</div>
+                <div class='metric-label'>عدد العمليات اليوم</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(f"""
+            <div class='metric-card'>
+                <div class='metric-icon'>💰</div>
+                <div class='metric-value'>{total_amount:,.0f}</div>
+                <div class='metric-label'>إجمالي المبيعات</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown(f"""
+            <div class='metric-card'>
+                <div class='metric-icon'>💸</div>
+                <div class='metric-value' style='color: #EF4444;'>{expenses_today:,.0f}</div>
+                <div class='metric-label'>المصروفات اليوم</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col4:
+        st.markdown(f"""
+            <div class='metric-card'>
+                <div class='metric-icon'>📈</div>
+                <div class='metric-value' style='color: {"#10B981" if net_profit >= 0 else "#EF4444"};'>
+                    {net_profit:,.0f}
+                </div>
+                <div class='metric-label'>صافي الربح</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # شريط تقدم اليوم
+    target = 20  # الهدف اليومي
+    progress = min((total_transactions / target) * 100, 100)
+    st.markdown(f"""
+        <div>
+            <div style='display: flex; justify-content: space-between;'>
+                <span>📊 تقدم اليوم</span>
+                <span>{total_transactions} من {target} عمليات</span>
+            </div>
+            <div class='custom-progress'>
+                <div class='custom-progress-bar' style='width: {progress}%;'></div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ملخص اليوم
+    st.subheader("📈 ملخص اليوم")
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        st.metric("💵 الكاش المفتوح", f"{cash_total:,.0f} جنيه", f"{cash_count} عملية")
+    with col_b:
+        st.metric("🏦 بنكك المفتوح", f"{bank_total:,.0f} جنيه", f"{bank_count} عملية")
+    with col_c:
+        st.metric("💸 المصروفات اليوم", f"{expenses_today:,.0f} جنيه")
+
+    # إذا كان مطوراً، يعرض إحصائيات إضافية
+    if is_dev:
         st.markdown("---")
+        st.subheader("📊 إحصائيات المطاعم")
 
-        with st.form("sales_form", clear_on_submit=True):
-            st.subheader("➕ إضافة عملية بيع جديدة")
+        restaurants = get_all_restaurants()
+        if restaurants:
+            data = []
+            for r in restaurants:
+                trans = get_user_transactions(r['username'])
+                exp = get_user_expenses(r['username'])
+                total_sales = sum(t['amount'] for t in trans if t.get('status') == 'open')
+                total_exp = sum(e['amount'] for e in exp if e.get('closing_batch') is None)
+                data.append({
+                    'المطعم': r['restaurant_name'],
+                    'المبيعات': total_sales,
+                    'المصروفات': total_exp,
+                    'صافي الربح': total_sales - total_exp
+                })
 
-            col_form1, col_form2 = st.columns(2)
-            with col_form1:
-                amount = st.number_input("💵 مبلغ العملية:", min_value=1, step=1, format="%d")
-            with col_form2:
-                payment_type = st.selectbox("💳 طريقة الدفع:", ["نقداً", "بنكك"])
+            df = pd.DataFrame(data)
+            if not df.empty:
+                st.dataframe(df, use_container_width=True)
 
-            transaction_ref = st.text_input("🔢 رقم العملية المرجعي:", placeholder="مطلوب فقط للدفع عبر بنكك")
+                # رسم بياني للمطاعم
+                fig = px.bar(df, x='المطعم', y=['المبيعات', 'المصروفات'],
+                             title='مقارنة المطاعم',
+                             barmode='group',
+                             color_discrete_sequence=['#10B981', '#EF4444'])
+                st.plotly_chart(fig, use_container_width=True)
 
-            submit_sale = st.form_submit_button("💾 حفظ العملية", use_container_width=True, type="primary")
+# ============================================
+# 2. المصروفات
+# ============================================
 
-        if submit_sale:
-            if amount <= 0:
-                st.warning("⚠️ يرجى إدخال مبلغ أكبر من الصفر!")
-            elif payment_type == "بنكك" and not transaction_ref.strip():
-                st.warning("⚠️ يرجى إدخال رقم العملية المرجعي!")
-            else:
-                conn = get_db_connection()
-                if conn:
-                    try:
-                        cursor = conn.cursor()
-                        ref_val = transaction_ref.strip() if payment_type == "بنكك" else None
-                        query = "INSERT INTO transactions (amount, payment_type, transaction_ref, status) VALUES (%s, %s, %s, 'open')"
-                        cursor.execute(query, (amount, payment_type, ref_val))
-                        conn.commit()
-                        log_activity(st.session_state.username, "إضافة مبيعات",
-                                     f"المبلغ: {amount}, الطريقة: {payment_type}")
-                        cursor.close()
-                        conn.close()
-                        st.success(f"✅ تم تسجيل العملية بنجاح! ({amount:,} جنيه)")
-                        st.balloons()
-                        time.sleep(0.5)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ خطأ: {e}")
+elif nav_option == "💰 المصروفات":
+    st.markdown(f"""
+        <div style='background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;'>
+            <h2 style='color: #1E3A8A; margin: 0;'>
+                💰 المصروفات {f" - {restaurant_name}" if not is_dev else ""}
+            </h2>
+        </div>
+    """, unsafe_allow_html=True)
 
-        st.markdown("---")
-        st.subheader("📈 ملخص اليوم")
-
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            st.metric("💵 الكاش المفتوح", f"{cash_total:,.0f} جنيه", f"{cash_count} عملية")
-        with col_b:
-            st.metric("🏦 بنكك المفتوح", f"{bank_total:,.0f} جنيه", f"{bank_count} عملية")
-        with col_c:
-            st.metric("💸 المصروفات اليوم", f"{expenses_today:,.0f} جنيه")
-
-    # ====== 2. المصروفات ======
-    elif nav_option == "💰 المصروفات":
-        st.title("💰 نظام المصروفات")
-
+    # إضافة مصروف جديد
+    with st.container():
+        st.markdown('<div class="form-card">', unsafe_allow_html=True)
         with st.expander("➕ إضافة مصروف جديد", expanded=True):
             with st.form("expense_form", clear_on_submit=True):
-                col_exp1, col_exp2 = st.columns(2)
-                with col_exp1:
-                    description = st.text_input("📝 وصف المصروف:", placeholder="مثال: فاتورة كهرباء")
-                with col_exp2:
-                    amount = st.number_input("💵 المبلغ:", min_value=1, step=1, format="%d")
+                col1, col2 = st.columns(2)
+                with col1:
+                    description = st.text_input("📝 وصف المصروف", placeholder="مثال: فاتورة كهرباء")
+                with col2:
+                    amount = st.number_input("💵 المبلغ", min_value=1, step=1, format="%d")
 
-                col_exp3, col_exp4 = st.columns(2)
-                with col_exp3:
-                    category = st.selectbox("📂 الفئة:", get_expense_categories())
-                with col_exp4:
-                    expense_date = st.date_input("📅 التاريخ:", value=date.today())
+                col3, col4 = st.columns(2)
+                with col3:
+                    category = st.selectbox("📂 الفئة", get_expense_categories())
+                with col4:
+                    expense_date = st.date_input("📅 التاريخ", value=date.today())
 
                 submit_expense = st.form_submit_button("💾 حفظ المصروف", use_container_width=True, type="primary")
 
@@ -461,9 +913,12 @@ else:
                         if conn:
                             try:
                                 cursor = conn.cursor()
-                                query = "INSERT INTO expenses (description, amount, category, expense_date, created_by) VALUES (%s, %s, %s, %s, %s)"
+                                query = """
+                                    INSERT INTO expenses (description, amount, category, expense_date, username, restaurant_name) 
+                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                """
                                 cursor.execute(query, (description.strip(), amount, category, expense_date,
-                                                       st.session_state.username))
+                                                       st.session_state.username, restaurant_name))
                                 conn.commit()
                                 log_activity(st.session_state.username, "إضافة مصروف",
                                              f"الوصف: {description}, المبلغ: {amount}, الفئة: {category}")
@@ -473,377 +928,23 @@ else:
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"❌ خطأ: {e}")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        expenses = get_today_expenses()
-        total_expenses = get_total_expenses_today()
+    # عرض المصروفات
+    expenses = get_today_expenses(st.session_state.username)
+    total_expenses = get_total_expenses_today(st.session_state.username)
 
-        if expenses:
-            col_stat1, col_stat2, col_stat3 = st.columns(3)
-            with col_stat1:
-                st.metric("📊 عدد المصروفات", len(expenses))
-            with col_stat2:
-                st.metric("💰 إجمالي المصروفات", f"{total_expenses:,.0f} جنيه")
-            with col_stat3:
-                avg_expense = total_expenses / len(expenses) if expenses else 0
-                st.metric("📊 متوسط المصروف", f"{avg_expense:,.0f} جنيه")
-
-            st.markdown("---")
-
-            df = pd.DataFrame(expenses)
-            df_display = df[['description', 'amount', 'category', 'created_by', 'created_at']]
-            df_display.columns = ['الوصف', 'المبلغ', 'الفئة', 'أضيف بواسطة', 'التاريخ']
-            st.dataframe(df_display, use_container_width=True)
-
-            st.subheader("📊 توزيع المصروفات حسب الفئة")
-            category_totals = df.groupby('category')['amount'].sum().reset_index()
-            category_totals.columns = ['الفئة', 'المبلغ']
-            st.dataframe(category_totals, use_container_width=True)
-
-            if len(category_totals) > 0:
-                fig = px.pie(
-                    category_totals,
-                    values='المبلغ',
-                    names='الفئة',
-                    title='توزيع المصروفات حسب الفئة',
-                    color_discrete_sequence=px.colors.qualitative.Set3
-                )
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("📭 لا توجد مصروفات اليوم")
-
-        with st.expander("📅 مصروفات الأيام السابقة"):
-            conn = get_db_connection()
-            if conn:
-                try:
-                    cursor = conn.cursor(dictionary=True)
-                    cursor.execute(
-                        "SELECT description, amount, category, expense_date, created_by FROM expenses WHERE expense_date < %s ORDER BY expense_date DESC LIMIT 50",
-                        (date.today(),)
-                    )
-                    old_expenses = cursor.fetchall()
-                    cursor.close()
-                    conn.close()
-
-                    if old_expenses:
-                        df_old = pd.DataFrame(old_expenses)
-                        df_old.columns = ['الوصف', 'المبلغ', 'الفئة', 'التاريخ', 'أضيف بواسطة']
-                        st.dataframe(df_old, use_container_width=True)
-                    else:
-                        st.info("📭 لا توجد مصروفات سابقة")
-                except Exception as e:
-                    st.error(f"❌ خطأ: {e}")
-
-    # ====== 3. أرشيف العمليات ======
-    elif nav_option == "📅 أرشيف العمليات":
-        st.title("📅 أرشيف العمليات والمصروفات")
-        st.markdown("---")
-
-        with st.expander("🔍 فلترة متقدمة", expanded=True):
-            col_filter1, col_filter2, col_filter3 = st.columns(3)
-
-            with col_filter1:
-                filter_batch = st.text_input("🔢 رقم الإقفال", placeholder="بحث برقم الإقفال...")
-
-            with col_filter2:
-                filter_date_from = st.date_input("📅 من تاريخ", value=None)
-
-            with col_filter3:
-                filter_date_to = st.date_input("📅 إلى تاريخ", value=None)
-
-            col_filter4, col_filter5, col_filter6 = st.columns(3)
-
-            with col_filter4:
-                filter_payment = st.selectbox("💳 طريقة الدفع", ["الكل", "نقداً", "بنكك"])
-
-            with col_filter5:
-                filter_min_amount = st.number_input("💰 أقل مبلغ", min_value=0, value=0, step=100)
-
-            with col_filter6:
-                filter_max_amount = st.number_input("💰 أعلى مبلغ", min_value=0, value=100000, step=100)
-
-            if st.button("🔍 بحث", use_container_width=True, type="primary"):
-                st.rerun()
-
-        filters = {}
-        if 'filter_batch' in locals() and filter_batch:
-            filters['batch_id'] = filter_batch
-        if 'filter_date_from' in locals() and filter_date_from:
-            filters['date_from'] = filter_date_from
-        if 'filter_date_to' in locals() and filter_date_to:
-            filters['date_to'] = filter_date_to
-        if 'filter_payment' in locals() and filter_payment != 'الكل':
-            filters['payment_type'] = filter_payment
-
-        archive_data = get_archive_data(filters)
-
-        if archive_data:
-            df_archive = pd.DataFrame(archive_data)
-
-            total_sales = df_archive['amount'].sum()
-            total_expenses = df_archive['total_expenses'].fillna(0).sum()
-            net_profit = total_sales - total_expenses
-            total_transactions = len(df_archive)
-            unique_batches = df_archive['closing_batch'].nunique()
-
-            st.subheader("📊 إحصائيات الأرشيف")
-            col_stat1, col_stat2, col_stat3, col_stat4, col_stat5 = st.columns(5)
-            with col_stat1:
-                st.metric("📊 إجمالي العمليات", total_transactions)
-            with col_stat2:
-                st.metric("💰 إجمالي المبيعات", f"{total_sales:,.0f} جنيه")
-            with col_stat3:
-                st.metric("💸 إجمالي المصروفات", f"{total_expenses:,.0f} جنيه", delta="-", delta_color="inverse")
-            with col_stat4:
-                st.metric("📈 صافي الربح", f"{net_profit:,.0f} جنيه")
-            with col_stat5:
-                st.metric("📋 عدد الإقفالات", unique_batches)
-
-            st.markdown("---")
-
-            st.subheader("📈 الرسوم البيانية")
-
-            col_chart1, col_chart2 = st.columns(2)
-
-            with col_chart1:
-                df_daily = df_archive.groupby(pd.to_datetime(df_archive['created_at']).dt.date).agg({
-                    'amount': 'sum',
-                    'total_expenses': 'sum'
-                }).reset_index()
-                df_daily.columns = ['التاريخ', 'المبيعات', 'المصروفات']
-
-                fig = go.Figure()
-                fig.add_trace(go.Bar(
-                    x=df_daily['التاريخ'],
-                    y=df_daily['المبيعات'],
-                    name='المبيعات',
-                    marker_color='#10B981'
-                ))
-                fig.add_trace(go.Bar(
-                    x=df_daily['التاريخ'],
-                    y=df_daily['المصروفات'],
-                    name='المصروفات',
-                    marker_color='#EF4444'
-                ))
-                fig.update_layout(
-                    title='المبيعات والمصروفات اليومية',
-                    xaxis_title='التاريخ',
-                    yaxis_title='المبلغ (جنيه)',
-                    barmode='group',
-                    height=400,
-                    template='plotly_white'
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
-            with col_chart2:
-                payment_dist = df_archive.groupby('payment_type').size().reset_index()
-                payment_dist.columns = ['طريقة الدفع', 'العدد']
-
-                fig_pie = px.pie(
-                    payment_dist,
-                    values='العدد',
-                    names='طريقة الدفع',
-                    title='توزيع طرق الدفع',
-                    color_discrete_sequence=['#3B82F6', '#F59E0B']
-                )
-                st.plotly_chart(fig_pie, use_container_width=True)
-
-            st.subheader("📋 العمليات المقفلة")
-
-            df_display = df_archive.copy()
-            df_display['created_at'] = pd.to_datetime(df_display['created_at']).dt.strftime('%Y-%m-%d %H:%M')
-            df_display['total_expenses'] = df_display['total_expenses'].fillna(0).astype(int)
-            df_display['net'] = df_display['amount'] - df_display['total_expenses']
-
-            df_display = df_display.rename(columns={
-                'id': 'رقم العملية',
-                'amount': 'المبلغ',
-                'payment_type': 'طريقة الدفع',
-                'transaction_ref': 'المرجع',
-                'closing_batch': 'رقم الإقفال',
-                'created_at': 'التاريخ',
-                'total_expenses': 'المصروفات',
-                'expense_count': 'عدد المصروفات',
-                'net': 'صافي الربح'
-            })
-
-            columns_to_show = ['رقم العملية', 'المبلغ', 'طريقة الدفع', 'المرجع', 'رقم الإقفال', 'التاريخ', 'المصروفات',
-                               'صافي الربح']
-            df_display = df_display[columns_to_show]
-
-            rows_per_page = 10
-            total_pages = (len(df_display) + rows_per_page - 1) // rows_per_page
-
-            if total_pages > 1:
-                col_nav1, col_nav2, col_nav3 = st.columns([1, 2, 1])
-                with col_nav1:
-                    if st.button("⬅️ السابق", disabled=(st.session_state.archive_page == 0)):
-                        st.session_state.archive_page -= 1
-                        st.rerun()
-                with col_nav2:
-                    st.write(f"📄 صفحة {st.session_state.archive_page + 1} من {total_pages}")
-                with col_nav3:
-                    if st.button("التالي ➡️", disabled=(st.session_state.archive_page >= total_pages - 1)):
-                        st.session_state.archive_page += 1
-                        st.rerun()
-
-                st.markdown("---")
-
-            start_idx = st.session_state.archive_page * rows_per_page
-            end_idx = min(start_idx + rows_per_page, len(df_display))
-            df_page = df_display.iloc[start_idx:end_idx]
-
-            st.dataframe(
-                df_page,
-                use_container_width=True,
-                height=400,
-                column_config={
-                    "المبلغ": st.column_config.NumberColumn("المبلغ", format="%d جنيه"),
-                    "المصروفات": st.column_config.NumberColumn("المصروفات", format="%d جنيه"),
-                    "صافي الربح": st.column_config.NumberColumn("صافي الربح", format="%d جنيه")
-                }
-            )
-
-            st.markdown("---")
-            col_export1, col_export2, col_export3 = st.columns([1, 1, 1])
-            with col_export1:
-                if st.button("📥 تصدير إلى CSV", use_container_width=True):
-                    df_export = df_archive.copy()
-                    df_export['created_at'] = pd.to_datetime(df_export['created_at']).dt.strftime('%Y-%m-%d %H:%M')
-                    df_export['total_expenses'] = df_export['total_expenses'].fillna(0)
-                    df_export['net'] = df_export['amount'] - df_export['total_expenses']
-
-                    df_export = df_export.rename(columns={
-                        'id': 'رقم العملية',
-                        'amount': 'المبلغ',
-                        'payment_type': 'طريقة الدفع',
-                        'transaction_ref': 'المرجع',
-                        'closing_batch': 'رقم الإقفال',
-                        'created_at': 'التاريخ',
-                        'total_expenses': 'المصروفات',
-                        'expense_count': 'عدد المصروفات',
-                        'net': 'صافي الربح'
-                    })
-
-                    csv = df_export.to_csv(index=False, encoding='utf-8-sig')
-                    st.download_button(
-                        label="📂 تحميل الملف",
-                        data=csv,
-                        file_name=f"archive_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                        mime="text/csv"
-                    )
-
-            with col_export2:
-                if st.button("🔄 تحديث البيانات", use_container_width=True):
-                    st.rerun()
-
-        else:
-            st.info("📭 لا توجد عمليات مقفلة في الأرشيف")
-
-            with st.expander("💡 كيف يتم إضافة البيانات إلى الأرشيف؟"):
-                st.markdown("""
-                    1. **قم بتسجيل المبيعات** في صفحة "تسجيل مبيعات"
-                    2. **أضف المصروفات** في صفحة "المصروفات"
-                    3. **قم بإقفال اليومية** في صفحة "إقفال اليومية"
-                    4. **ستظهر البيانات تلقائياً** في الأرشيف
-                """)
-
-    # ====== 4. إقفال اليومية ======
-    elif nav_option == "🔒 إقفال اليومية":
-        st.title("🔒 إقفال اليومية")
-
-        cash_total, bank_total, cash_count, bank_count = get_daily_totals()
-        total_transactions = cash_count + bank_count
-        total_amount = cash_total + bank_total
-        expenses_today = get_total_expenses_today()
-        net_profit = total_amount - expenses_today
-
-        st.subheader("📊 ملخص اليوم")
-
-        col1, col2, col3, col4 = st.columns(4)
+    if expenses:
+        col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("📊 عدد العمليات", total_transactions)
+            st.metric("📊 عدد المصروفات", len(expenses))
         with col2:
-            st.metric("💰 إجمالي المبيعات", f"{total_amount:,.0f} جنيه")
+            st.metric("💰 إجمالي المصروفات", f"{total_expenses:,.0f} جنيه")
         with col3:
-            st.metric("💸 المصروفات", f"{expenses_today:,.0f} جنيه", delta="-", delta_color="inverse")
-        with col4:
-            st.metric("📈 صافي الربح", f"{net_profit:,.0f} جنيه")
+            avg_expense = total_expenses / len(expenses) if expenses else 0
+            st.metric("📊 متوسط المصروف", f"{avg_expense:,.0f} جنيه")
 
         st.markdown("---")
 
-        expenses = get_today_expenses()
-        if expenses:
-            with st.expander("📋 عرض المصروفات اليومية", expanded=True):
-                df_exp = pd.DataFrame(expenses)
-                df_exp_display = df_exp[['description', 'amount', 'category']]
-                df_exp_display.columns = ['الوصف', 'المبلغ', 'الفئة']
-                st.dataframe(df_exp_display, use_container_width=True)
-                st.info(f"💸 إجمالي المصروفات: {expenses_today:,.0f} جنيه")
-        else:
-            st.info("📭 لا توجد مصروفات اليوم")
-
-        st.markdown("---")
-
-        st.warning("⚠️ **تنبيه:** سيتم إقفال اليومية الحالية ونقل جميع العمليات والمصروفات إلى الأرشيف.")
-
-        confirm_checkbox = st.checkbox("✅ أوافق على إقفال اليومية الحالية")
-
-        if st.button("🔒 تأكيد إقفال اليومية", type="primary", use_container_width=True, disabled=not confirm_checkbox):
-            conn = get_db_connection()
-            if conn:
-                try:
-                    cursor = conn.cursor()
-                    batch_id = f"BATCH-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-
-                    query = "UPDATE transactions SET status = 'closed', closing_batch = %s WHERE status = 'open'"
-                    cursor.execute(query, (batch_id,))
-                    transactions_closed = cursor.rowcount
-
-                    today = date.today()
-                    query_exp = "UPDATE expenses SET closing_batch = %s WHERE expense_date = %s AND closing_batch IS NULL"
-                    cursor.execute(query_exp, (batch_id, today))
-                    expenses_closed = cursor.rowcount
-
-                    conn.commit()
-
-                    log_activity(
-                        st.session_state.username,
-                        "إقفال يومية",
-                        f"رقم الإقفال: {batch_id}, عمليات: {transactions_closed}, مصروفات: {expenses_closed}"
-                    )
-
-                    cursor.close()
-                    conn.close()
-
-                    st.success("✅ تم إقفال اليومية بنجاح!")
-                    st.info(f"📋 رقم الإقفال: **{batch_id}**")
-                    st.info(f"📊 العمليات المقفلة: **{transactions_closed}**")
-                    st.info(f"💰 المصروفات المقفلة: **{expenses_closed}**")
-                    st.info(f"📈 صافي الربح: **{net_profit:,.0f} جنيه**")
-                    st.balloons()
-                    time.sleep(0.5)
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ خطأ: {e}")
-
-
-                    # إضافة زر للنسخ الاحتياطي في الشريط الجانبي
-                    def backup_database():
-                        """إنشاء نسخة احتياطية من قاعدة البيانات"""
-                        conn = get_db_connection()
-                        if conn:
-                            cursor = conn.cursor()
-                            # تصدير جميع الجداول إلى ملف SQL
-                            cursor.execute("SHOW TABLES")
-                            tables = cursor.fetchall()
-
-                            backup_data = {}
-                            for table in tables:
-                                cursor.execute(f"SELECT * FROM {table[0]}")
-                                backup_data[table[0]] = cursor.fetchall()
-
-                            # حفظ في ملف
-                            with open(f"backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json", 'w') as f:
-                                json.dump(backup_data, f)
-
-                            st.success("✅ تم إنشاء النسخة الاحتياطية!")
+        df = pd.DataFrame(expenses)
+        df_display = df[['description', 'amount', 'category', 'username', 'restaurant_name', 'created_at']]
