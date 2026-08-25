@@ -934,4 +934,4 @@ elif nav_option == "💰 المصروفات":
                                              f"الوصف: {description}, المبلغ: {amount}, الفئة: {category}")
                                 cursor.close()
                                 conn.close()
-                                st.success(f"✅ تم إضافة المصروف بنجاح! ({amount:,.0f} جن
+                                st.success(f"✅ تم إضافة المصروف بنجاح! ({amount:,.0f} جنيه)")
