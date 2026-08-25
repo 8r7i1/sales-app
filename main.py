@@ -1,14 +1,13 @@
 import streamlit as st
 import mysql.connector
-from datetime import datetime
+from datetime import datetime, date
 import hashlib
 import pandas as pd
 import time
-from io import StringIO
 
 # إعدادات صفحة Streamlit
 st.set_page_config(
-    page_title="نظام المبيعات - حسن",
+    page_title="نظام المبيعات والمصروفات - حسن",
     page_icon="📊",
     layout="centered",
     initial_sidebar_state="expanded"
@@ -17,12 +16,10 @@ st.set_page_config(
 
 # ===================== دوال المساعدة =====================
 
-# دالة لتشفير كلمة المرور
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-# دالة الاتصال بقاعدة البيانات
 def get_db_connection(max_retries=3):
     for attempt in range(max_retries):
         try:
@@ -42,7 +39,6 @@ def get_db_connection(max_retries=3):
     return None
 
 
-# دالة تسجيل سجل العمليات
 def log_activity(username, action, details=""):
     conn = get_db_connection()
     if conn:
@@ -61,7 +57,6 @@ def log_activity(username, action, details=""):
     return False
 
 
-# دالة التحقق من تسجيل الدخول
 def authenticate_user(username, password):
     conn = get_db_connection()
     if conn:
@@ -75,12 +70,10 @@ def authenticate_user(username, password):
             conn.close()
             return user
         except Exception as e:
-            st.error(f"خطأ في التحقق: {e}")
             return None
     return None
 
 
-# دالة الحصول على مجاميع اليوم
 def get_daily_totals():
     conn = get_db_connection()
     if conn:
@@ -112,7 +105,62 @@ def get_daily_totals():
     return 0, 0, 0, 0
 
 
-# دالة التأكد من وجود مستخدمين
+def get_today_expenses():
+    """الحصول على مصروفات اليوم"""
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor(dictionary=True)
+            today = date.today()
+            cursor.execute(
+                "SELECT id, description, amount, category, expense_date, created_by, created_at FROM expenses WHERE expense_date = %s AND closing_batch IS NULL",
+                (today,)
+            )
+            expenses = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return expenses
+        except Exception as e:
+            return []
+    return []
+
+
+def get_total_expenses_today():
+    """إجمالي مصروفات اليوم"""
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            today = date.today()
+            cursor.execute(
+                "SELECT SUM(amount) as total FROM expenses WHERE expense_date = %s AND closing_batch IS NULL",
+                (today,)
+            )
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            return result[0] or 0
+        except Exception as e:
+            return 0
+    return 0
+
+
+def get_expense_categories():
+    """الحصول على فئات المصروفات"""
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM expense_categories ORDER BY name")
+            categories = [row[0] for row in cursor.fetchall()]
+            cursor.close()
+            conn.close()
+            return categories
+        except Exception as e:
+            return ['إيجار', 'رواتب', 'كهرباء', 'ماء', 'إنترنت', 'مواصلات', 'مشتريات', 'أخرى']
+    return ['إيجار', 'رواتب', 'كهرباء', 'ماء', 'إنترنت', 'مواصلات', 'مشتريات', 'أخرى']
+
+
 def ensure_users_exist():
     conn = get_db_connection()
     if conn:
@@ -147,6 +195,61 @@ def ensure_users_exist():
     return False
 
 
+def ensure_tables_exist():
+    """التأكد من وجود الجداول المطلوبة"""
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+
+            # إنشاء جدول expense_categories إذا لم يكن موجوداً
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS expense_categories (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(50) NOT NULL UNIQUE,
+                    icon VARCHAR(10) DEFAULT '💰'
+                )
+            """)
+
+            # إضافة الفئات الافتراضية
+            categories = [
+                ('إيجار', '🏠'), ('رواتب', '👨‍💼'), ('كهرباء', '⚡'),
+                ('ماء', '💧'), ('إنترنت', '🌐'), ('مواصلات', '🚗'),
+                ('مشتريات', '🛒'), ('أخرى', '📌')
+            ]
+            for name, icon in categories:
+                cursor.execute(
+                    "INSERT IGNORE INTO expense_categories (name, icon) VALUES (%s, %s)",
+                    (name, icon)
+                )
+
+            # إنشاء جدول expenses إذا لم يكن موجوداً
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS expenses (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    description VARCHAR(255) NOT NULL,
+                    amount DECIMAL(10, 2) NOT NULL,
+                    category VARCHAR(50) NOT NULL,
+                    expense_date DATE NOT NULL,
+                    closing_batch VARCHAR(50),
+                    created_by VARCHAR(50),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_date (expense_date),
+                    INDEX idx_batch (closing_batch),
+                    INDEX idx_category (category)
+                )
+            """)
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"❌ خطأ في إنشاء الجداول: {e}")
+            return False
+    return False
+
+
 # ===================== تهيئة الجلسة =====================
 
 if "logged_in" not in st.session_state:
@@ -154,8 +257,9 @@ if "logged_in" not in st.session_state:
     st.session_state.username = ""
     st.session_state.page_num = 0
 
-# التأكد من وجود مستخدمين
+# التأكد من وجود المستخدمين والجداول
 ensure_users_exist()
+ensure_tables_exist()
 
 # ===================== واجهة تسجيل الدخول =====================
 
@@ -199,7 +303,7 @@ else:
 
     nav_option = st.sidebar.radio(
         "📋 القائمة الرئيسية",
-        ["📊 تسجيل مبيعات", "📅 أرشيف العمليات", "🔒 إقفال اليومية"]
+        ["📊 تسجيل مبيعات", "💰 المصروفات", "📅 أرشيف العمليات", "🔒 إقفال اليومية"]
     )
 
     st.sidebar.markdown("---")
@@ -220,16 +324,20 @@ else:
         st.title("📊 لوحة تحكم نظام المبيعات")
 
         cash_total, bank_total, cash_count, bank_count = get_daily_totals()
+        expenses_today = get_total_expenses_today()
         total_transactions = cash_count + bank_count
         total_amount = cash_total + bank_total
+        net_profit = total_amount - expenses_today
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("📊 عدد العمليات اليوم", total_transactions)
         with col2:
             st.metric("💰 إجمالي المبيعات", f"{total_amount:,.0f} جنيه")
         with col3:
-            st.metric("⏱️ آخر تحديث", datetime.now().strftime("%H:%M"))
+            st.metric("💸 المصروفات اليوم", f"{expenses_today:,.0f} جنيه", delta="-", delta_color="inverse")
+        with col4:
+            st.metric("📈 صافي الربح", f"{net_profit:,.0f} جنيه")
 
         st.markdown("---")
 
@@ -272,18 +380,124 @@ else:
                         st.error(f"❌ خطأ: {e}")
 
         st.markdown("---")
-        st.subheader("📈 ملخص المجاميع المفتوحة")
+        st.subheader("📈 ملخص اليوم")
 
-        col_a, col_b = st.columns(2)
+        col_a, col_b, col_c = st.columns(3)
         with col_a:
-            st.metric("💵 إجمالي الكاش المفتوح", f"{cash_total:,.0f} جنيه", f"{cash_count} عملية")
+            st.metric("💵 الكاش المفتوح", f"{cash_total:,.0f} جنيه", f"{cash_count} عملية")
         with col_b:
-            st.metric("🏦 إجمالي بنكك المفتوح", f"{bank_total:,.0f} جنيه", f"{bank_count} عملية")
+            st.metric("🏦 بنكك المفتوح", f"{bank_total:,.0f} جنيه", f"{bank_count} عملية")
+        with col_c:
+            st.metric("💸 المصروفات اليوم", f"{expenses_today:,.0f} جنيه")
 
-    # ====== 2. أرشيف العمليات ======
+    # ====== 2. المصروفات ======
+    elif nav_option == "💰 المصروفات":
+        st.title("💰 نظام المصروفات")
+
+        # إضافة مصروف جديد
+        with st.expander("➕ إضافة مصروف جديد", expanded=True):
+            with st.form("expense_form", clear_on_submit=True):
+                col_exp1, col_exp2 = st.columns(2)
+                with col_exp1:
+                    description = st.text_input("📝 وصف المصروف:", placeholder="مثال: فاتورة كهرباء")
+                with col_exp2:
+                    amount = st.number_input("💵 المبلغ:", min_value=1, step=1, format="%d")
+
+                col_exp3, col_exp4 = st.columns(2)
+                with col_exp3:
+                    category = st.selectbox("📂 الفئة:", get_expense_categories())
+                with col_exp4:
+                    expense_date = st.date_input("📅 التاريخ:", value=date.today())
+
+                submit_expense = st.form_submit_button("💾 حفظ المصروف", use_container_width=True, type="primary")
+
+                if submit_expense:
+                    if not description.strip():
+                        st.warning("⚠️ يرجى إدخال وصف للمصروف!")
+                    elif amount <= 0:
+                        st.warning("⚠️ يرجى إدخال مبلغ أكبر من الصفر!")
+                    else:
+                        conn = get_db_connection()
+                        if conn:
+                            try:
+                                cursor = conn.cursor()
+                                query = "INSERT INTO expenses (description, amount, category, expense_date, created_by) VALUES (%s, %s, %s, %s, %s)"
+                                cursor.execute(query, (description.strip(), amount, category, expense_date,
+                                                       st.session_state.username))
+                                conn.commit()
+                                log_activity(st.session_state.username, "إضافة مصروف",
+                                             f"الوصف: {description}, المبلغ: {amount}, الفئة: {category}")
+                                cursor.close()
+                                conn.close()
+                                st.success(f"✅ تم إضافة المصروف بنجاح! ({amount:,.0f} جنيه)")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ خطأ: {e}")
+
+        # عرض المصروفات اليومية
+        st.subheader("📋 مصروفات اليوم")
+
+        expenses = get_today_expenses()
+        total_expenses = get_total_expenses_today()
+
+        if expenses:
+            # إحصائيات سريعة
+            col_stat1, col_stat2, col_stat3 = st.columns(3)
+            with col_stat1:
+                st.metric("📊 عدد المصروفات", len(expenses))
+            with col_stat2:
+                st.metric("💰 إجمالي المصروفات", f"{total_expenses:,.0f} جنيه")
+            with col_stat3:
+                avg_expense = total_expenses / len(expenses) if expenses else 0
+                st.metric("📊 متوسط المصروف", f"{avg_expense:,.0f} جنيه")
+
+            st.markdown("---")
+
+            # عرض المصروفات في جدول
+            df = pd.DataFrame(expenses)
+            df_display = df[['description', 'amount', 'category', 'created_by', 'created_at']]
+            df_display.columns = ['الوصف', 'المبلغ', 'الفئة', 'أضيف بواسطة', 'التاريخ']
+            st.dataframe(df_display, use_container_width=True)
+
+            # إجمالي حسب الفئة
+            st.subheader("📊 توزيع المصروفات حسب الفئة")
+            category_totals = df.groupby('category')['amount'].sum().reset_index()
+            category_totals.columns = ['الفئة', 'المبلغ']
+            st.dataframe(category_totals, use_container_width=True)
+
+            # رسم بياني بسيط
+            if len(category_totals) > 0:
+                st.bar_chart(category_totals.set_index('الفئة'))
+        else:
+            st.info("📭 لا توجد مصروفات اليوم")
+
+        # عرض مصروفات سابقة
+        with st.expander("📅 مصروفات الأيام السابقة"):
+            conn = get_db_connection()
+            if conn:
+                try:
+                    cursor = conn.cursor(dictionary=True)
+                    cursor.execute(
+                        "SELECT description, amount, category, expense_date, created_by FROM expenses WHERE expense_date < %s ORDER BY expense_date DESC LIMIT 50",
+                        (date.today(),)
+                    )
+                    old_expenses = cursor.fetchall()
+                    cursor.close()
+                    conn.close()
+
+                    if old_expenses:
+                        df_old = pd.DataFrame(old_expenses)
+                        df_old.columns = ['الوصف', 'المبلغ', 'الفئة', 'التاريخ', 'أضيف بواسطة']
+                        st.dataframe(df_old, use_container_width=True)
+                    else:
+                        st.info("📭 لا توجد مصروفات سابقة")
+                except Exception as e:
+                    st.error(f"❌ خطأ: {e}")
+
+    # ====== 3. أرشيف العمليات ======
     elif nav_option == "📅 أرشيف العمليات":
         st.title("📅 أرشيف الإقفالات")
-        st.info("ℹ️ العمليات التي تم إقفالها")
+        st.info("ℹ️ العمليات التي تم إقفالها مع المصروفات المرتبطة")
 
         conn = get_db_connection()
         if conn:
@@ -303,6 +517,19 @@ else:
                 archive_data = cursor.fetchall()
 
                 if archive_data:
+                    # عرض ملخص المصروفات لكل إقفال
+                    for batch in archive_data:
+                        batch_id = batch['closing_batch']
+                        if batch_id:
+                            cursor.execute(
+                                "SELECT SUM(amount) as total_expenses FROM expenses WHERE closing_batch = %s",
+                                (batch_id,)
+                            )
+                            exp_result = cursor.fetchone()
+                            batch['expenses_total'] = exp_result['total_expenses'] if exp_result else 0
+                        else:
+                            batch['expenses_total'] = 0
+
                     st.dataframe(archive_data, use_container_width=True)
 
                     col_pagi1, col_pagi2, col_pagi3 = st.columns([1, 2, 1])
@@ -324,40 +551,84 @@ else:
             except Exception as e:
                 st.error(f"❌ خطأ: {e}")
 
-    # ====== 3. إقفال اليومية ======
+    # ====== 4. إقفال اليومية (النسخة الجديدة) ======
     elif nav_option == "🔒 إقفال اليومية":
         st.title("🔒 إقفال اليومية")
 
         cash_total, bank_total, cash_count, bank_count = get_daily_totals()
         total_transactions = cash_count + bank_count
         total_amount = cash_total + bank_total
+        expenses_today = get_total_expenses_today()
+        net_profit = total_amount - expenses_today
 
-        st.warning(
-            f"⚠️ **تنبيه:** سوف يتم إقفال {total_transactions} عملية بمبلغ {total_amount:,.0f} جنيه"
-        )
+        # عرض ملخص اليوم
+        st.subheader("📊 ملخص اليوم")
 
-        col_warn1, col_warn2 = st.columns(2)
-        with col_warn1:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
             st.metric("📊 عدد العمليات", total_transactions)
-        with col_warn2:
-            st.metric("💰 إجمالي المبلغ", f"{total_amount:,.0f} جنيه")
+        with col2:
+            st.metric("💰 إجمالي المبيعات", f"{total_amount:,.0f} جنيه")
+        with col3:
+            st.metric("💸 المصروفات", f"{expenses_today:,.0f} جنيه", delta="-", delta_color="inverse")
+        with col4:
+            st.metric("📈 صافي الربح", f"{net_profit:,.0f} جنيه")
 
-        confirm_text = st.text_input("✍️ اكتب 'إقفال' لتأكيد العملية:", placeholder="اكتب إقفال هنا")
+        st.markdown("---")
 
-        if st.button("🔒 تأكيد الإقفال", type="primary", use_container_width=True, disabled=(confirm_text != "إقفال")):
+        # عرض المصروفات قبل الإقفال
+        expenses = get_today_expenses()
+        if expenses:
+            with st.expander("📋 عرض المصروفات اليومية", expanded=True):
+                df_exp = pd.DataFrame(expenses)
+                df_exp_display = df_exp[['description', 'amount', 'category']]
+                df_exp_display.columns = ['الوصف', 'المبلغ', 'الفئة']
+                st.dataframe(df_exp_display, use_container_width=True)
+                st.info(f"💸 إجمالي المصروفات: {expenses_today:,.0f} جنيه")
+        else:
+            st.info("📭 لا توجد مصروفات اليوم")
+
+        st.markdown("---")
+
+        # تأكيد الإقفال (بدون كتابة كلمة إقفال)
+        st.warning("⚠️ **تنبيه:** سيتم إقفال اليومية الحالية ونقل جميع العمليات والمصروفات إلى الأرشيف.")
+
+        confirm_checkbox = st.checkbox("✅ أوافق على إقفال اليومية الحالية")
+
+        if st.button("🔒 تأكيد إقفال اليومية", type="primary", use_container_width=True, disabled=not confirm_checkbox):
             conn = get_db_connection()
             if conn:
                 try:
                     cursor = conn.cursor()
                     batch_id = f"BATCH-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+
+                    # إقفال العمليات
                     query = "UPDATE transactions SET status = 'closed', closing_batch = %s WHERE status = 'open'"
                     cursor.execute(query, (batch_id,))
-                    affected_rows = cursor.rowcount
+                    transactions_closed = cursor.rowcount
+
+                    # ربط المصروفات بالإقفال
+                    today = date.today()
+                    query_exp = "UPDATE expenses SET closing_batch = %s WHERE expense_date = %s AND closing_batch IS NULL"
+                    cursor.execute(query_exp, (batch_id, today))
+                    expenses_closed = cursor.rowcount
+
                     conn.commit()
-                    log_activity(st.session_state.username, "إقفال يومية", f"رقم الإقفال: {batch_id}")
+
+                    log_activity(
+                        st.session_state.username,
+                        "إقفال يومية",
+                        f"رقم الإقفال: {batch_id}, عمليات: {transactions_closed}, مصروفات: {expenses_closed}"
+                    )
+
                     cursor.close()
                     conn.close()
-                    st.success(f"✅ تم إقفال اليومية بنجاح! (رقم: {batch_id})")
+
+                    st.success(f"✅ تم إقفال اليومية بنجاح!")
+                    st.info(f"📋 رقم الإقفال: **{batch_id}**")
+                    st.info(f"📊 العمليات المقفلة: **{transactions_closed}**")
+                    st.info(f"💰 المصروفات المقفلة: **{expenses_closed}**")
+                    st.info(f"📈 صافي الربح: **{net_profit:,.0f} جنيه**")
                     st.balloons()
                     time.sleep(0.5)
                     st.rerun()
