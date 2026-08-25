@@ -6,7 +6,7 @@ import pandas as pd
 import time
 from io import StringIO
 
-# إعدادات صفحة Streamlit لتصميم أنيق وواضح
+# إعدادات صفحة Streamlit
 st.set_page_config(
     page_title="نظام المبيعات - حسن",
     page_icon="📊",
@@ -19,13 +19,11 @@ st.set_page_config(
 
 # دالة لتشفير كلمة المرور
 def hash_password(password):
-    """تشفير كلمة المرور باستخدام SHA-256"""
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-# دالة الاتصال بقاعدة البيانات مع إعادة المحاولة
+# دالة الاتصال بقاعدة البيانات
 def get_db_connection(max_retries=3):
-    """الاتصال بقاعدة البيانات مع إعادة المحاولة في حالة الفشل"""
     for attempt in range(max_retries):
         try:
             conn = mysql.connector.connect(
@@ -38,15 +36,14 @@ def get_db_connection(max_retries=3):
             return conn
         except Exception as e:
             if attempt == max_retries - 1:
-                st.error(f"❌ فشل الاتصال بقاعدة البيانات بعد {max_retries} محاولات: {e}")
+                st.error(f"❌ فشل الاتصال بقاعدة البيانات: {e}")
                 return None
-            time.sleep(1)  # انتظر ثانية قبل المحاولة مجدداً
+            time.sleep(1)
     return None
 
 
-# دالة تسجيل سجل العمليات (Audit Log)
+# دالة تسجيل سجل العمليات
 def log_activity(username, action, details=""):
-    """تسجيل نشاط المستخدم في سجل التدقيق"""
     conn = get_db_connection()
     if conn:
         try:
@@ -60,19 +57,16 @@ def log_activity(username, action, details=""):
             conn.close()
             return True
         except Exception as e:
-            st.warning(f"⚠️ تعذر تسجيل النشاط: {e}")
             return False
     return False
 
 
-# دالة التحقق من تسجيل الدخول (مع تشفير كلمة المرور)
+# دالة التحقق من تسجيل الدخول
 def authenticate_user(username, password):
-    """التحقق من صحة بيانات تسجيل الدخول مع تشفير كلمة المرور"""
     conn = get_db_connection()
     if conn:
         try:
             cursor = conn.cursor(dictionary=True)
-            # استخدام كلمة المرور المشفرة
             hashed_pw = hash_password(password)
             query = "SELECT * FROM users WHERE username = %s AND password = %s"
             cursor.execute(query, (username.strip(), hashed_pw))
@@ -81,21 +75,19 @@ def authenticate_user(username, password):
             conn.close()
             return user
         except Exception as e:
-            st.error(f"خطأ في التحقق من المستخدم: {e}")
+            st.error(f"خطأ في التحقق: {e}")
             return None
     return None
 
 
-# دالة الحصول على مجاميع اليوم المفتوحة
+# دالة الحصول على مجاميع اليوم
 def get_daily_totals():
-    """الحصول على مجاميع العمليات المفتوحة اليوم"""
     conn = get_db_connection()
     if conn:
         try:
             cursor = conn.cursor(dictionary=True)
             cursor.execute(
-                "SELECT payment_type, SUM(amount) as total, COUNT(*) as count \
-                 FROM transactions WHERE status = 'open' GROUP BY payment_type"
+                "SELECT payment_type, SUM(amount) as total, COUNT(*) as count FROM transactions WHERE status = 'open' GROUP BY payment_type"
             )
             results = cursor.fetchall()
             cursor.close()
@@ -116,18 +108,54 @@ def get_daily_totals():
 
             return cash_total, bank_total, cash_count, bank_count
         except Exception as e:
-            st.error(f"خطأ في جلب المجاميع: {e}")
             return 0, 0, 0, 0
     return 0, 0, 0, 0
 
 
-# ===================== حالة الجلسة =====================
+# دالة التأكد من وجود مستخدمين
+def ensure_users_exist():
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) as count FROM users")
+            result = cursor.fetchone()
 
-# تهيئة حالة تسجيل الدخول
+            if result[0] == 0:
+                users_data = [
+                    ('admin', hash_password('admin123'), 'مدير النظام', 'admin'),
+                    ('user1', hash_password('user123'), 'مستخدم تجريبي', 'user'),
+                    ('manager', hash_password('manager123'), 'مدير مبيعات', 'manager'),
+                    ('user', hash_password('user123'), 'مستخدم عادي', 'user')
+                ]
+
+                for username, password, full_name, role in users_data:
+                    cursor.execute(
+                        "INSERT INTO users (username, password, full_name, role) VALUES (%s, %s, %s, %s)",
+                        (username, password, full_name, role)
+                    )
+
+                conn.commit()
+                print(f"✅ تم إضافة {len(users_data)} مستخدم")
+
+            cursor.close()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"❌ خطأ: {e}")
+            return False
+    return False
+
+
+# ===================== تهيئة الجلسة =====================
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = ""
-    st.session_state.page_num = 0  # للتصفح في الأرشيف
+    st.session_state.page_num = 0
+
+# التأكد من وجود مستخدمين
+ensure_users_exist()
 
 # ===================== واجهة تسجيل الدخول =====================
 
@@ -158,16 +186,14 @@ if not st.session_state.logged_in:
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown(
-        "<p style='text-align: center; color: gray; font-size: 14px;'>"
-        "Developed by <b>HASSAN ELNOUSH</b> © 2026"
-        "</p>",
+        "<p style='text-align: center; color: gray; font-size: 14px;'>Developed by <b>HASSAN ELNOUSH</b> © 2026</p>",
         unsafe_allow_html=True
     )
 
-# ===================== الواجهة الرئيسية (بعد تسجيل الدخول) =====================
+# ===================== الواجهة الرئيسية =====================
 
 else:
-    # ----------------- الشريط الجانبي (Sidebar) -----------------
+    # الشريط الجانبي
     st.sidebar.markdown(f"### 👋 مرحباً، {st.session_state.username}")
     st.sidebar.markdown("---")
 
@@ -185,81 +211,46 @@ else:
         st.rerun()
 
     st.sidebar.markdown(
-        "<p style='text-align: center; color: gray; font-size: 12px;'>"
-        "👨‍💻 Developer: <b>HASSAN ELNOUSH</b><br>"
-        f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-        "</p>",
+        f"<p style='text-align: center; color: gray; font-size: 12px;'>👨‍💻 Developer: <b>HASSAN ELNOUSH</b><br>📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>",
         unsafe_allow_html=True
     )
 
-    # ==================== 1. شاشة تسجيل مبيعات =====================
-
+    # ====== 1. تسجيل مبيعات ======
     if nav_option == "📊 تسجيل مبيعات":
         st.title("📊 لوحة تحكم نظام المبيعات")
 
-        # إحصائيات سريعة
         cash_total, bank_total, cash_count, bank_count = get_daily_totals()
         total_transactions = cash_count + bank_count
         total_amount = cash_total + bank_total
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric(
-                label="📊 عدد العمليات اليوم",
-                value=total_transactions,
-                delta="عمليات مفتوحة"
-            )
+            st.metric("📊 عدد العمليات اليوم", total_transactions)
         with col2:
-            st.metric(
-                label="💰 إجمالي المبيعات",
-                value=f"{total_amount:,.0f} جنيه",
-                delta="اليومية"
-            )
+            st.metric("💰 إجمالي المبيعات", f"{total_amount:,.0f} جنيه")
         with col3:
-            st.metric(
-                label="⏱️ آخر تحديث",
-                value=datetime.now().strftime("%H:%M"),
-                delta="الآن"
-            )
+            st.metric("⏱️ آخر تحديث", datetime.now().strftime("%H:%M"))
 
         st.markdown("---")
 
-        # نموذج إضافة مبيعات
         with st.form("sales_form", clear_on_submit=True):
             st.subheader("➕ إضافة عملية بيع جديدة")
 
             col_form1, col_form2 = st.columns(2)
             with col_form1:
-                amount = st.number_input(
-                    "💵 مبلغ العملية:",
-                    min_value=1,
-                    step=1,
-                    format="%d",
-                    help="أدخل المبلغ بالأرقام الصحيحة فقط"
-                )
+                amount = st.number_input("💵 مبلغ العملية:", min_value=1, step=1, format="%d")
             with col_form2:
-                payment_type = st.selectbox(
-                    "💳 طريقة الدفع:",
-                    ["نقداً", "بنكك"],
-                    help="اختر طريقة الدفع المناسبة"
-                )
+                payment_type = st.selectbox("💳 طريقة الدفع:", ["نقداً", "بنكك"])
 
-            transaction_ref = st.text_input(
-                "🔢 رقم العملية المرجعي:",
-                placeholder="مطلوب فقط للدفع عبر بنكك",
-                help="أدخل رقم التحويل أو المرجع في حالة الدفع عبر بنكك"
-            )
+            transaction_ref = st.text_input("🔢 رقم العملية المرجعي:", placeholder="مطلوب فقط للدفع عبر بنكك")
 
             submit_sale = st.form_submit_button("💾 حفظ العملية", use_container_width=True, type="primary")
 
         if submit_sale:
-            # التحقق من صحة البيانات
             if amount <= 0:
                 st.warning("⚠️ يرجى إدخال مبلغ أكبر من الصفر!")
             elif payment_type == "بنكك" and not transaction_ref.strip():
-                st.warning("⚠️ يرجى إدخال رقم العملية المرجعي للدفع عبر بنكك!")
-            elif payment_type == "بنكك" and len(transaction_ref.strip()) > 50:
-                st.error("❌ رقم العملية المرجعي طويل جداً (حد أقصى 50 حرف)!")
+                st.warning("⚠️ يرجى إدخال رقم العملية المرجعي!")
             else:
                 conn = get_db_connection()
                 if conn:
@@ -269,62 +260,30 @@ else:
                         query = "INSERT INTO transactions (amount, payment_type, transaction_ref, status) VALUES (%s, %s, %s, 'open')"
                         cursor.execute(query, (amount, payment_type, ref_val))
                         conn.commit()
-
-                        # تسجيل النشاط
-                        log_activity(
-                            st.session_state.username,
-                            "إضافة مبيعات",
-                            f"المبلغ: {amount}, الطريقة: {payment_type}"
-                        )
-
+                        log_activity(st.session_state.username, "إضافة مبيعات",
+                                     f"المبلغ: {amount}, الطريقة: {payment_type}")
                         cursor.close()
                         conn.close()
-                        st.success(f"✅ تم تسجيل عملية المبيعات بنجاح! (المبلغ: {amount:,} جنيه)")
-                        st.balloons()  # تأثير احتفالي
+                        st.success(f"✅ تم تسجيل العملية بنجاح! ({amount:,} جنيه)")
+                        st.balloons()
                         time.sleep(0.5)
                         st.rerun()
                     except Exception as e:
-                        st.error(f"❌ حدث خطأ أثناء حفظ العملية: {e}")
+                        st.error(f"❌ خطأ: {e}")
 
         st.markdown("---")
-        st.subheader("📈 ملخص المجاميع المفتوحة (اليومية الحالية)")
+        st.subheader("📈 ملخص المجاميع المفتوحة")
 
         col_a, col_b = st.columns(2)
         with col_a:
-            st.metric(
-                label="💵 إجمالي الكاش المفتوح",
-                value=f"{cash_total:,.0f} جنيه",
-                delta=f"{cash_count} عملية"
-            )
+            st.metric("💵 إجمالي الكاش المفتوح", f"{cash_total:,.0f} جنيه", f"{cash_count} عملية")
         with col_b:
-            st.metric(
-                label="🏦 إجمالي بنكك المفتوح",
-                value=f"{bank_total:,.0f} جنيه",
-                delta=f"{bank_count} عملية"
-            )
+            st.metric("🏦 إجمالي بنكك المفتوح", f"{bank_total:,.0f} جنيه", f"{bank_count} عملية")
 
-    # ==================== 2. شاشة أرشيف العمليات المقفلة =====================
-
+    # ====== 2. أرشيف العمليات ======
     elif nav_option == "📅 أرشيف العمليات":
-        st.title("📅 أرشيف الإقفالات والعمليات السابقة")
-        st.info("ℹ️ هنا يتم عرض العمليات التي تم إقفالها مقسمة ومنظمة حسب مجموعات الإقفال.")
-
-        # خيارات التصفية
-        with st.expander("🔍 خيارات التصفية والبحث", expanded=False):
-            col_filter1, col_filter2, col_filter3 = st.columns(3)
-            with col_filter1:
-                date_from = st.date_input("📅 من تاريخ", value=None)
-            with col_filter2:
-                date_to = st.date_input("📅 إلى تاريخ", value=None)
-            with col_filter3:
-                payment_filter = st.selectbox(
-                    "💳 طريقة الدفع",
-                    ["الكل", "نقداً", "بنكك"]
-                )
-
-            if st.button("🔄 تطبيق التصفية", use_container_width=True):
-                st.session_state.page_num = 0
-                st.rerun()
+        st.title("📅 أرشيف الإقفالات")
+        st.info("ℹ️ العمليات التي تم إقفالها")
 
         conn = get_db_connection()
         if conn:
@@ -333,132 +292,76 @@ else:
                 page_size = 20
                 offset = st.session_state.page_num * page_size
 
-                # بناء الاستعلام مع التصفية
-                query = "SELECT id, amount, payment_type, transaction_ref, closing_batch, created_at FROM transactions WHERE status = 'closed'"
-                count_query = "SELECT COUNT(*) as total FROM transactions WHERE status = 'closed'"
-                params = []
-
-                if date_from:
-                    query += " AND DATE(created_at) >= %s"
-                    count_query += " AND DATE(created_at) >= %s"
-                    params.append(date_from)
-                if date_to:
-                    query += " AND DATE(created_at) <= %s"
-                    count_query += " AND DATE(created_at) <= %s"
-                    params.append(date_to)
-                if payment_filter != "الكل":
-                    query += " AND payment_type = %s"
-                    count_query += " AND payment_type = %s"
-                    params.append(payment_filter)
-
-                # جلب العدد الكلي
-                cursor.execute(count_query, params)
+                cursor.execute("SELECT COUNT(*) as total FROM transactions WHERE status = 'closed'")
                 total_records = cursor.fetchone()['total']
                 total_pages = (total_records + page_size - 1) // page_size if total_records > 0 else 1
 
-                # جلب الصفحة الحالية
-                query += " ORDER BY created_at DESC LIMIT %s OFFSET %s"
-                params.extend([page_size, offset])
-                cursor.execute(query, params)
+                cursor.execute(
+                    "SELECT id, amount, payment_type, transaction_ref, closing_batch, created_at FROM transactions WHERE status = 'closed' ORDER BY created_at DESC LIMIT %s OFFSET %s",
+                    (page_size, offset)
+                )
                 archive_data = cursor.fetchall()
 
                 if archive_data:
-                    # عرض البيانات في جدول
                     st.dataframe(archive_data, use_container_width=True)
 
-                    # أزرار التنقل بين الصفحات
                     col_pagi1, col_pagi2, col_pagi3 = st.columns([1, 2, 1])
                     with col_pagi1:
                         if st.button("⬅️ السابق", disabled=(st.session_state.page_num == 0)):
                             st.session_state.page_num -= 1
                             st.rerun()
                     with col_pagi2:
-                        st.write(
-                            f"📄 صفحة {st.session_state.page_num + 1} من {total_pages} (إجمالي {total_records} عملية)")
+                        st.write(f"📄 صفحة {st.session_state.page_num + 1} من {total_pages}")
                     with col_pagi3:
                         if st.button("التالي ➡️", disabled=(st.session_state.page_num >= total_pages - 1)):
                             st.session_state.page_num += 1
                             st.rerun()
-
-                    # زر تصدير البيانات
-                    if st.button("📥 تصدير الأرشيف إلى CSV", use_container_width=True):
-                        df = pd.DataFrame(archive_data)
-                        csv = df.to_csv(index=False, encoding='utf-8-sig')
-                        st.download_button(
-                            label="📂 تحميل ملف CSV",
-                            data=csv,
-                            file_name=f"archive_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                            mime="text/csv",
-                            use_container_width=True
-                        )
                 else:
-                    st.info("📭 لا توجد عمليات مقفلة في الأرشيف تطابق المعايير.")
+                    st.info("📭 لا توجد عمليات مقفلة")
 
                 cursor.close()
                 conn.close()
             except Exception as e:
-                st.error(f"❌ خطأ في تحميل الأرشيف: {e}")
+                st.error(f"❌ خطأ: {e}")
 
-    # ==================== 3. شاشة إقفال اليومية =====================
-
+    # ====== 3. إقفال اليومية ======
     elif nav_option == "🔒 إقفال اليومية":
         st.title("🔒 إقفال اليومية")
 
-        # عرض إحصائيات قبل الإقفال
         cash_total, bank_total, cash_count, bank_count = get_daily_totals()
         total_transactions = cash_count + bank_count
         total_amount = cash_total + bank_total
 
         st.warning(
-            f"⚠️ **تنبيه:** سوف يتم إقفال {total_transactions} عملية بمبلغ إجمالي {total_amount:,.0f} جنيه.\n\n"
-            "عند الضغط على إقفال اليومية، سيتم نقل كافة العمليات المفتوحة إلى الأرشيف وإعطاؤها رقم إقفال خاص."
+            f"⚠️ **تنبيه:** سوف يتم إقفال {total_transactions} عملية بمبلغ {total_amount:,.0f} جنيه"
         )
 
         col_warn1, col_warn2 = st.columns(2)
         with col_warn1:
-            st.metric("📊 عدد العمليات المفتوحة", total_transactions)
+            st.metric("📊 عدد العمليات", total_transactions)
         with col_warn2:
             st.metric("💰 إجمالي المبلغ", f"{total_amount:,.0f} جنيه")
 
-        # حقل تأكيد الإقفال
-        confirm_text = st.text_input(
-            "✍️ اكتب 'إقفال' لتأكيد العملية:",
-            placeholder="اكتب إقفال هنا",
-            help="لتأكيد الإقفال، يجب كتابة كلمة 'إقفال' بالضبط"
-        )
+        confirm_text = st.text_input("✍️ اكتب 'إقفال' لتأكيد العملية:", placeholder="اكتب إقفال هنا")
 
-        if st.button("🔒 تأكيد إقفال اليومية", type="primary", use_container_width=True,
-                     disabled=(confirm_text != "إقفال")):
+        if st.button("🔒 تأكيد الإقفال", type="primary", use_container_width=True, disabled=(confirm_text != "إقفال")):
             conn = get_db_connection()
             if conn:
                 try:
                     cursor = conn.cursor()
-                    # توليد معرف إقفال فريد
                     batch_id = f"BATCH-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-
-                    # تحديث العمليات المفتوحة إلى مقفلة
                     query = "UPDATE transactions SET status = 'closed', closing_batch = %s WHERE status = 'open'"
                     cursor.execute(query, (batch_id,))
                     affected_rows = cursor.rowcount
                     conn.commit()
-
-                    # تسجيل النشاط
-                    log_activity(
-                        st.session_state.username,
-                        "إقفال يومية",
-                        f"رقم الإقفال: {batch_id}, عدد العمليات: {affected_rows}"
-                    )
-
+                    log_activity(st.session_state.username, "إقفال يومية", f"رقم الإقفال: {batch_id}")
                     cursor.close()
                     conn.close()
-
-                    st.success(f"✅ تم إقفال اليومية بنجاح!")
-                    st.info(f"📋 رقم الإقفال: **{batch_id}**")
-                    st.info(f"📊 عدد العمليات المقفلة: **{affected_rows}**")
+                    st.success(f"✅ تم إقفال اليومية بنجاح! (رقم: {batch_id})")
                     st.balloons()
                     time.sleep(0.5)
                     st.rerun()
                 except Exception as e:
-                    st.error(f"❌ حدث خطأ أثناء إقفال اليومية: {e}")
+                    st.error(f"❌ خطأ: {e}")
 
 # ===================== نهاية الملف =====================
