@@ -935,3 +935,16 @@ elif nav_option == "💰 المصروفات":
                                 cursor.close()
                                 conn.close()
                                 st.success(f"✅ تم إضافة المصروف بنجاح! ({amount:,.0f} جنيه)")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ خطأ: {e}")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # عرض المصروفات
+    expenses = get_today_expenses(st.session_state.username)
+    total_expenses = get_total_expenses_today(st.session_state.username)
+
+    if expenses:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📊
