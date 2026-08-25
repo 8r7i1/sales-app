@@ -11,8 +11,8 @@ import plotly.graph_objects as go
 # إعدادات صفحة Streamlit
 # ============================================
 st.set_page_config(
-    page_title="نظام المطاعم - المبيعات والمصروفات",
-    page_icon="🍽️",
+    page_title="نظام بيع - المبيعات والمصروفات",
+    page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -25,18 +25,15 @@ def apply_custom_css():
     """تطبيق التنسيقات المخصصة للواجهة"""
     st.markdown("""
     <style>
-    /* خطوط جميلة */
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;700&display=swap');
     * {
         font-family: 'Tajawal', sans-serif;
     }
 
-    /* خلفية الصفحة */
     .stApp {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
 
-    /* بطاقات المعلومات */
     .metric-card {
         background: white;
         padding: 20px;
@@ -65,7 +62,6 @@ def apply_custom_css():
         font-size: 14px;
     }
 
-    /* أزرار مخصصة */
     .stButton button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -81,7 +77,6 @@ def apply_custom_css():
         box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
     }
 
-    /* شريط جانبي */
     .css-1d391kg {
         background: linear-gradient(180deg, #1E3A8A 0%, #1a1a2e 100%);
     }
@@ -89,7 +84,6 @@ def apply_custom_css():
         color: white;
     }
 
-    /* بطاقات النماذج */
     .form-card {
         background: white;
         padding: 25px;
@@ -98,7 +92,6 @@ def apply_custom_css():
         margin-bottom: 20px;
     }
 
-    /* عنوان رئيسي */
     .main-header {
         text-align: center;
         padding: 30px 0;
@@ -119,7 +112,6 @@ def apply_custom_css():
         margin: 10px 0 0 0;
     }
 
-    /* شعار */
     .logo-container {
         text-align: center;
         padding: 20px 0;
@@ -134,7 +126,6 @@ def apply_custom_css():
         100% { transform: scale(1); }
     }
 
-    /* صندوق تسجيل الدخول */
     .login-box {
         background: rgba(255,255,255,0.95);
         padding: 40px;
@@ -146,7 +137,6 @@ def apply_custom_css():
         margin: 0 auto;
     }
 
-    /* أيقونات الحالة */
     .status-open {
         color: #10B981;
         font-weight: bold;
@@ -156,7 +146,6 @@ def apply_custom_css():
         font-weight: bold;
     }
 
-    /* تحسينات الموبايل */
     @media only screen and (max-width: 600px) {
         .main-header h1 {
             font-size: 28px;
@@ -172,7 +161,6 @@ def apply_custom_css():
         }
     }
 
-    /* شريط التقدم */
     .custom-progress {
         background: #e0e0e0;
         border-radius: 10px;
@@ -185,6 +173,21 @@ def apply_custom_css():
         height: 100%;
         border-radius: 10px;
         transition: width 0.5s;
+    }
+
+    .revenue-card {
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    .revenue-card-bank {
+        background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -454,7 +457,7 @@ def ensure_users_exist():
 
             if result[0] == 0:
                 users_data = [
-                    ('developer', hash_password('dev123'), 'المطور', 'admin', 'المطور', True),
+                    ('developer', hash_password('dev123'), 'المطور HASSAN ELNOUSH', 'admin', 'المطور', True),
                     ('karoly', hash_password('karoly123'), 'مطعم كرولي الصحافة', 'user', 'مطعم كرولي الصحافة', True),
                     ('ghost', hash_password('ghost123'), 'محل حلويات Ghost Sweet', 'user', 'محل حلويات Ghost Sweet',
                      True),
@@ -546,22 +549,19 @@ ensure_tables_exist()
 # ============================================
 
 if not st.session_state.logged_in:
-    # تنسيق صفحة تسجيل الدخول
     st.markdown("""
         <div style='min-height: 100vh; display: flex; align-items: center; justify-content: center;'>
             <div style='width: 100%; max-width: 500px;'>
     """, unsafe_allow_html=True)
 
-    # الشعار
     st.markdown("""
         <div class='logo-container'>
-            <div class='logo-text'>🍽️</div>
-            <h1 style='color: #1E3A8A; font-size: 35px; margin: 10px 0;'>نظام المطاعم</h1>
-            <p style='color: #666; font-size: 16px;'>إدارة المبيعات والمصروفات</p>
+            <div class='logo-text'>💰</div>
+            <h1 style='color: #1E3A8A; font-size: 35px; margin: 10px 0;'>نظام بيع</h1>
+            <p style='color: #666; font-size: 16px;'>إدارة المبيعات والمصروفات والإيرادات</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # صندوق تسجيل الدخول
     with st.container():
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
 
@@ -570,12 +570,6 @@ if not st.session_state.logged_in:
 
             username_input = st.text_input("👤 اسم المستخدم", placeholder="أدخل اسم المستخدم")
             password_input = st.text_input("🔑 كلمة المرور", type="password", placeholder="أدخل كلمة المرور")
-
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                st.checkbox("تذكرني 🔑")
-            with col2:
-                st.markdown("[🔓 نسيت كلمة المرور؟]")
 
             submit_login = st.form_submit_button("🚪 دخول النظام", use_container_width=True)
 
@@ -598,7 +592,7 @@ if not st.session_state.logged_in:
     st.markdown("""
         <hr>
         <p style='text-align: center; color: gray; font-size: 14px;'>
-            Developed by <b>المطور</b> © 2026
+            Developed by <b>HASSAN ELNOUSH</b> © 2026
         </p>
     """, unsafe_allow_html=True)
 
@@ -609,7 +603,6 @@ if not st.session_state.logged_in:
 # الواجهة الرئيسية (بعد تسجيل الدخول)
 # ============================================
 
-# الحصول على معلومات المستخدم
 user = get_user_role(st.session_state.username)
 is_dev = user and user['role'] == 'admin'
 restaurant_name = user['restaurant_name'] if user else ''
@@ -621,15 +614,15 @@ restaurant_name = user['restaurant_name'] if user else ''
 st.markdown(f"""
     <div class='main-header'>
         <div style='display: flex; align-items: center; justify-content: center; gap: 20px;'>
-            <span style='font-size: 40px;'>🍽️</span>
+            <span style='font-size: 40px;'>💰</span>
             <div>
-                <h1>نظام المطاعم</h1>
-                <p>إدارة المبيعات والمصروفات</p>
+                <h1>نظام بيع</h1>
+                <p>إدارة المبيعات والمصروفات والإيرادات</p>
             </div>
         </div>
         <div style='margin-top: 10px;'>
             <span style='background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px;'>
-                {f"👨‍💻 {st.session_state.username} - {restaurant_name}" if not is_dev else f"👨‍💻 {st.session_state.username} - صلاحية كاملة"}
+                {f"👨‍💼 {st.session_state.username} - {restaurant_name}" if not is_dev else f"👨‍💻 {st.session_state.username} - صلاحية كاملة"}
             </span>
         </div>
     </div>
@@ -640,23 +633,21 @@ st.markdown(f"""
 # ============================================
 
 with st.sidebar:
-    # صورة البروفايل
     st.markdown(f"""
         <div style='text-align: center; padding: 20px 0;'>
             <div style='width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 35px; color: white;'>
-                {'' if is_dev else '🍽️'}
+                {'' if is_dev else '💰'}
                 {'' if not is_dev else '👨‍💻'}
             </div>
             <h3 style='color: white; margin: 10px 0 5px 0;'>{st.session_state.username}</h3>
             <p style='color: rgba(255,255,255,0.8); font-size: 14px;'>
-                {f"🏪 {restaurant_name}" if not is_dev else "👨‍💻 المطور"}
+                {f"🏪 {restaurant_name}" if not is_dev else "👨‍💻 المطور HASSAN ELNOUSH"}
             </p>
         </div>
     """, unsafe_allow_html=True)
 
     st.sidebar.markdown("---")
 
-    # القائمة
     nav_option = st.sidebar.radio(
         "📋 القائمة الرئيسية",
         ["📊 لوحة التحكم", "💰 المصروفات", "📅 الأرشيف", "🔒 إقفال اليومية"]
@@ -664,13 +655,11 @@ with st.sidebar:
 
     st.sidebar.markdown("---")
 
-    # إدارة المطاعم (للمطور فقط)
     if is_dev:
-        if st.sidebar.button("👥 إدارة المطاعم", use_container_width=True):
+        if st.sidebar.button("👥 إدارة العملاء", use_container_width=True):
             st.session_state.show_restaurants = not st.session_state.show_restaurants
             st.rerun()
 
-    # زر تسجيل الخروج
     if st.sidebar.button("🚪 تسجيل الخروج", use_container_width=True):
         log_activity(st.session_state.username, "تسجيل خروج", "تم تسجيل الخروج")
         st.session_state.logged_in = False
@@ -680,17 +669,17 @@ with st.sidebar:
     st.sidebar.markdown("---")
     st.sidebar.markdown(f"""
         <p style='text-align: center; color: rgba(255,255,255,0.6); font-size: 12px;'>
-            👨‍💻 المطور<br>
+            👨‍💻 HASSAN ELNOUSH<br>
             📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}
         </p>
     """, unsafe_allow_html=True)
 
 # ============================================
-# إدارة المطاعم (للمطور فقط)
+# إدارة العملاء (للمطور فقط)
 # ============================================
 
 if st.session_state.show_restaurants and is_dev:
-    st.title("👥 إدارة المطاعم")
+    st.title("👥 إدارة العملاء")
 
     restaurants = get_all_restaurants()
     if restaurants:
@@ -699,7 +688,7 @@ if st.session_state.show_restaurants and is_dev:
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("📊 عدد المطاعم", len(restaurants))
+            st.metric("📊 عدد العملاء", len(restaurants))
         with col2:
             total_trans = 0
             for r in restaurants:
@@ -709,8 +698,7 @@ if st.session_state.show_restaurants and is_dev:
         with col3:
             st.metric("📅 آخر تحديث", datetime.now().strftime("%H:%M"))
 
-        # إضافة مطعم جديد
-        with st.expander("➕ إضافة مطعم جديد", expanded=False):
+        with st.expander("➕ إضافة عميل جديد", expanded=False):
             with st.form("add_restaurant_form"):
                 col1, col2 = st.columns(2)
                 with col1:
@@ -718,9 +706,9 @@ if st.session_state.show_restaurants and is_dev:
                     new_password = st.text_input("🔑 كلمة المرور", type="password")
                 with col2:
                     new_full_name = st.text_input("📛 الاسم الكامل")
-                    new_restaurant_name = st.text_input("🏪 اسم المطعم")
+                    new_restaurant_name = st.text_input("🏪 اسم العميل")
 
-                submit_rest = st.form_submit_button("💾 إضافة المطعم", use_container_width=True)
+                submit_rest = st.form_submit_button("💾 إضافة العميل", use_container_width=True)
 
                 if submit_rest:
                     if not new_username or not new_password:
@@ -738,12 +726,12 @@ if st.session_state.show_restaurants and is_dev:
                                 conn.commit()
                                 cursor.close()
                                 conn.close()
-                                st.success(f"✅ تم إضافة المطعم {new_restaurant_name} بنجاح!")
+                                st.success(f"✅ تم إضافة العميل {new_restaurant_name} بنجاح!")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"❌ خطأ: {e}")
     else:
-        st.info("📭 لا توجد مطاعم مسجلة")
+        st.info("📭 لا يوجد عملاء مسجلين")
 
     if st.button("🔙 العودة للوحة الرئيسية", use_container_width=True):
         st.session_state.show_restaurants = False
@@ -763,14 +751,39 @@ if nav_option == "📊 لوحة التحكم":
         </div>
     """, unsafe_allow_html=True)
 
-    # جلب البيانات
     cash_total, bank_total, cash_count, bank_count = get_daily_totals(st.session_state.username)
     expenses_today = get_total_expenses_today(st.session_state.username)
     total_transactions = cash_count + bank_count
     total_amount = cash_total + bank_total
     net_profit = total_amount - expenses_today
 
-    # بطاقات المعلومات
+    # بطاقات الإيرادات (كاش + بنكك)
+    st.subheader("💰 الإيرادات")
+    col_rev1, col_rev2 = st.columns(2)
+
+    with col_rev1:
+        st.markdown(f"""
+            <div class='revenue-card'>
+                <div style='font-size: 30px;'>💵</div>
+                <div style='font-size: 28px; font-weight: bold;'>{cash_total:,.0f}</div>
+                <div>إيرادات الكاش</div>
+                <div style='font-size: 14px; opacity: 0.8;'>{cash_count} عملية</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_rev2:
+        st.markdown(f"""
+            <div class='revenue-card-bank'>
+                <div style='font-size: 30px;'>🏦</div>
+                <div style='font-size: 28px; font-weight: bold;'>{bank_total:,.0f}</div>
+                <div>إيرادات بنكك</div>
+                <div style='font-size: 14px; opacity: 0.8;'>{bank_count} عملية</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # بطاقات المعلومات الرئيسية
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -787,7 +800,7 @@ if nav_option == "📊 لوحة التحكم":
             <div class='metric-card'>
                 <div class='metric-icon'>💰</div>
                 <div class='metric-value'>{total_amount:,.0f}</div>
-                <div class='metric-label'>إجمالي المبيعات</div>
+                <div class='metric-label'>إجمالي الإيرادات</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -814,7 +827,7 @@ if nav_option == "📊 لوحة التحكم":
     st.markdown("---")
 
     # شريط تقدم اليوم
-    target = 20  # الهدف اليومي
+    target = 20
     progress = min((total_transactions / target) * 100, 100)
     st.markdown(f"""
         <div>
@@ -840,10 +853,9 @@ if nav_option == "📊 لوحة التحكم":
     with col_c:
         st.metric("💸 المصروفات اليوم", f"{expenses_today:,.0f} جنيه")
 
-    # إذا كان مطوراً، يعرض إحصائيات إضافية
     if is_dev:
         st.markdown("---")
-        st.subheader("📊 إحصائيات المطاعم")
+        st.subheader("📊 إحصائيات العملاء")
 
         restaurants = get_all_restaurants()
         if restaurants:
@@ -854,8 +866,8 @@ if nav_option == "📊 لوحة التحكم":
                 total_sales = sum(t['amount'] for t in trans if t.get('status') == 'open')
                 total_exp = sum(e['amount'] for e in exp if e.get('closing_batch') is None)
                 data.append({
-                    'المطعم': r['restaurant_name'],
-                    'المبيعات': total_sales,
+                    'العميل': r['restaurant_name'],
+                    'الإيرادات': total_sales,
                     'المصروفات': total_exp,
                     'صافي الربح': total_sales - total_exp
                 })
@@ -864,9 +876,8 @@ if nav_option == "📊 لوحة التحكم":
             if not df.empty:
                 st.dataframe(df, use_container_width=True)
 
-                # رسم بياني للمطاعم
-                fig = px.bar(df, x='المطعم', y=['المبيعات', 'المصروفات'],
-                             title='مقارنة المطاعم',
+                fig = px.bar(df, x='العميل', y=['الإيرادات', 'المصروفات'],
+                             title='مقارنة العملاء',
                              barmode='group',
                              color_discrete_sequence=['#10B981', '#EF4444'])
                 st.plotly_chart(fig, use_container_width=True)
@@ -884,7 +895,6 @@ elif nav_option == "💰 المصروفات":
         </div>
     """, unsafe_allow_html=True)
 
-    # إضافة مصروف جديد
     with st.container():
         st.markdown('<div class="form-card">', unsafe_allow_html=True)
         with st.expander("➕ إضافة مصروف جديد", expanded=True):
@@ -924,27 +934,4 @@ elif nav_option == "💰 المصروفات":
                                              f"الوصف: {description}, المبلغ: {amount}, الفئة: {category}")
                                 cursor.close()
                                 conn.close()
-                                st.success(f"✅ تم إضافة المصروف بنجاح! ({amount:,.0f} جنيه)")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ خطأ: {e}")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # عرض المصروفات
-    expenses = get_today_expenses(st.session_state.username)
-    total_expenses = get_total_expenses_today(st.session_state.username)
-
-    if expenses:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("📊 عدد المصروفات", len(expenses))
-        with col2:
-            st.metric("💰 إجمالي المصروفات", f"{total_expenses:,.0f} جنيه")
-        with col3:
-            avg_expense = total_expenses / len(expenses) if expenses else 0
-            st.metric("📊 متوسط المصروف", f"{avg_expense:,.0f} جنيه")
-
-        st.markdown("---")
-
-        df = pd.DataFrame(expenses)
-        df_display = df[['description', 'amount', 'category', 'username', 'restaurant_name', 'created_at']]
+                                st.success(f"✅ تم إضافة المصروف بنجاح! ({amount:,.0f} جن
